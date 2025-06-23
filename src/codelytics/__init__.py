@@ -1,2 +1,3 @@
-def hello() -> str:
-    return "Hello from codelockholmes!"
+from .pdf import PDF
+
+__all__ = ["PDF"]

@@ -30,5 +30,5 @@ class TestCountWords:
         assert pdf.count_words(ignore_pages=[5]) < pdf.count_words()
 
     def test_ignore_references(self, pdf):
-        ignore_pages = [f">{pdf.references_page()-1}"]
+        ignore_pages = [f">{pdf.references_page() - 1}"]
         assert pdf.count_words(ignore_pages=ignore_pages) < pdf.count_words()

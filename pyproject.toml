@@ -1,7 +1,7 @@
 [project]
-name = "codelockholmes"
+name = "codelytics"
 version = "2025.06.0"
-description = "A Python package for measuring code quality parameters."
+description = "A Python package for measuring code parameters."
 readme = "README.md"
 authors = [{ name = "marijanbeg", email = "m.beg@imperial.ac.uk" }]
 requires-python = ">=3.13"
@@ -30,8 +30,17 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+    "pytest-sugar>=1.0.0",
+    "pytest-xdist>=3.7.0",
+]
+
 [project.urls]
-Repository = "https://github.com/teachnology/codelockholmes"
+Repository = "https://github.com/teachnology/codelytics"
 
 [build-system]
 requires = ["hatchling"]
@@ -72,13 +81,5 @@ convention = "numpy"
 omit = ["tests/*.py"]
 
 [tool.pytest.ini_options]
-addopts = "-v -n auto --doctest-modules --cov=codelockholmes --cov-report=html --cov-report=term"
+addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term"
 
-[dependency-groups]
-dev = [
-    "ipykernel>=6.29.5",
-    "pytest>=8.4.0",
-    "pytest-cov>=6.1.1",
-    "pytest-sugar>=1.0.0",
-    "pytest-xdist>=3.7.0",
-]

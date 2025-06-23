@@ -1,18 +1,18 @@
-# codelockholmes
+# codelytics
 [Marijan Beg](https://github.com/marijanbeg)<sup>1</sup>
 
 <sup>1</sup> *Department of Earth Science and Engineering, Imperial College London, London SW7 2AZ, UK*  
 
 ## About
 
-`codelockholmes` is a Python package for measuring code quality parameters.
+`codelytics` is a Python package for measuring code quality parameters.
 
 ## Installation
 
-You can install `codelockholmes` via `pip` from PyPI:
+You can install `codelytics` via `pip` from PyPI:
 
 ```bash
-pip install codelockholmes
+pip install codelytics
 ```
 
 ## Documentation

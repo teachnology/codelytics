@@ -10,12 +10,22 @@ def pdf():
     return PDF(pathlib.Path(__file__).parent / "data" / "report.pdf")
 
 
-def test_n_pages(pdf):
-    assert pdf.n_pages == 5
+class TestInit:
+    def test_init(self, pdf):
+        assert isinstance(pdf, PDF)
+        assert pdf.path == pathlib.Path(__file__).parent / "data" / "report.pdf"
+
+    def test_init_nonexistent_file(self):
+        with pytest.raises(FileNotFoundError):
+            PDF("nonexistent.pdf")
 
 
-def test_references_page(pdf):
-    assert pdf.references_page() == 5
+class TestProperties:
+    def test_n_pages(self, pdf):
+        assert pdf.n_pages == 5
+
+    def test_references_page(self, pdf):
+        assert pdf.references_page() == 5
 
 
 class TestCountWords:
@@ -32,3 +42,7 @@ class TestCountWords:
     def test_ignore_references(self, pdf):
         ignore_pages = [f">{pdf.references_page() - 1}"]
         assert pdf.count_words(ignore_pages=ignore_pages) < pdf.count_words()
+
+    def test_gt(self, pdf):
+        assert pdf.count_words(ignore_pages=[">5"]) == pdf.count_words()
+        assert pdf.count_words(ignore_pages=[">4"]) == pdf.count_words(ignore_pages=[5])

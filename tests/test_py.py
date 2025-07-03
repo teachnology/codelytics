@@ -227,3 +227,17 @@ class TestImports:
 
     def test_imports(self, imports):
         assert imports.n_imports() == 3
+
+
+class TestNModules:
+    def test_simple(self, simple):
+        assert simple.n_modules() == 0
+
+    def test_complex(self, complex):
+        assert complex.n_modules() == 0
+
+    def test_empty(self, empty):
+        assert empty.n_modules() == 0
+
+    def test_imports(self, imports):
+        assert imports.n_modules() == 2  # math and operator

@@ -163,3 +163,40 @@ class Py:
             return import_count
         except Exception:
             return 0
+
+    def n_modules(self):
+        """
+        Return the number of unique modules imported in the Python code.
+
+        Counts unique top-level modules/packages that are imported, regardless
+        of how many times they appear or what is imported from them.
+        - import os, sys → 2 modules
+        - import os.path, os.environ → 1 module (os)
+        - from pathlib import Path; import pathlib → 1 module (pathlib)
+        - from . import local → 0 modules (relative import)
+
+        Returns
+        -------
+        int
+            Total number of unique modules imported.
+        """
+        try:
+            tree = ast.parse(self.content)
+            modules = set()
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    # Handle: import module, import module.submodule
+                    for alias in node.names:
+                        module_name = alias.name.split(".")[0]
+                        modules.add(module_name)
+
+                elif isinstance(node, ast.ImportFrom):
+                    # Handle: from module import something
+                    if node.module:  # Skip relative imports (from . import ...)
+                        module_name = node.module.split(".")[0]
+                        modules.add(module_name)
+
+            return len(modules)
+        except Exception:
+            return 0

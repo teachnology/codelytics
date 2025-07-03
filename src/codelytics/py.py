@@ -1,7 +1,9 @@
+import ast
 import pathlib
-from radon.raw import analyze
+
 from radon.complexity import cc_visit
-from radon.visitors import Function, Class
+from radon.raw import analyze
+from radon.visitors import Class, Function
 
 
 class Py:
@@ -14,7 +16,8 @@ class Py:
         Parameters
         ----------
         source : pathlib.Path or str
-            Either a Path object pointing to a Python file or a string containing Python code.
+            Either a Path object pointing to a Python file or a string containing Python
+            code.
         """
         if isinstance(source, pathlib.Path):
             if not source.exists():
@@ -130,5 +133,33 @@ class Py:
             # Count only Class objects, excluding Function objects
             class_count = sum(1 for item in results if isinstance(item, Class))
             return class_count
+        except Exception:
+            return 0
+
+    def n_imports(self):
+        """
+        Return the number of import statements in the Python code.
+
+        Counts all types of import statements including:
+        - import module
+        - from module import function
+        - import module as alias
+        - from module import function as alias
+        - from module import *
+
+        Returns
+        -------
+        int
+            Total number of import statements.
+        """
+        try:
+            tree = ast.parse(self.content)
+            import_count = 0
+
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                    import_count += 1
+
+            return import_count
         except Exception:
             return 0

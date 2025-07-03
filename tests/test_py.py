@@ -1,7 +1,7 @@
 import pathlib
-import tempfile
 
 import pytest
+
 from codelytics import Py
 
 
@@ -14,6 +14,13 @@ def simple():
 def complex():
     return Py(
         pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file02.py"
+    )
+
+
+@pytest.fixture
+def imports():
+    return Py(
+        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file03.py"
     )
 
 
@@ -108,7 +115,7 @@ class TestInitialization:
 
 class TestLoc:
     def test_simple(self, simple):
-        assert simple.loc() == 4
+        assert simple.loc() == 5
 
     def test_complex(self, complex):
         assert complex.loc() == 33
@@ -185,6 +192,7 @@ class TestEdgeCases:
         assert inline_comments.lloc() == 2
         assert inline_comments.sloc() == 2
 
+
 class TestNFunctions:
     def test_simple(self, simple):
         assert simple.n_functions() == 1
@@ -195,6 +203,7 @@ class TestNFunctions:
     def test_empty(self, empty):
         assert empty.n_functions() == 0
 
+
 class TestNClasses:
     def test_simple(self, simple):
         assert simple.n_classes() == 0
@@ -204,3 +213,17 @@ class TestNClasses:
 
     def test_empty(self, empty):
         assert empty.n_classes() == 0
+
+
+class TestImports:
+    def test_simple(self, simple):
+        assert simple.n_imports() == 0
+
+    def test_complex(self, complex):
+        assert complex.n_imports() == 0
+
+    def test_empty(self, empty):
+        assert empty.n_imports() == 0
+
+    def test_imports(self, imports):
+        assert imports.n_imports() == 3

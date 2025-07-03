@@ -164,7 +164,7 @@ class Py:
         except Exception:
             return 0
 
-    def n_modules(self):
+    def n_imported_modules(self):
         """
         Return the number of unique modules imported in the Python code.
 

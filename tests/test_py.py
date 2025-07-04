@@ -30,6 +30,11 @@ def cc():
         pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file04.py"
     )
 
+@pytest.fixture
+def cogc():
+    return Py(
+        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file05.py"
+    )
 
 @pytest.fixture
 def comment_only():
@@ -250,7 +255,7 @@ class TestNModules:
         assert imports.n_imported_modules() == 2  # math and operator
 
 
-class TestTotalCyclomaticComplexity:
+class TestCyclomaticComplexity:
     def test_simple(self, simple):
         assert simple.cc_stats(use_median=False) == 1
         assert simple.cc_stats(use_median=True) == 1
@@ -265,3 +270,25 @@ class TestTotalCyclomaticComplexity:
 
     def test_empty(self, empty):
         assert empty.cc_stats() == 0
+
+    def test_comment_only(self, comment_only):
+        assert comment_only.cc_stats() == 0
+
+class TestCognitiveComplexity:
+    def test_simple(self, simple):
+        assert simple.cogc_stats(use_median=False) == 0
+        assert simple.cogc_stats(use_median=True) == 0
+
+    def test_complex(self, complex):
+        assert complex.cogc_stats(use_median=False) == (1 + 0 + 1) / 3
+        assert complex.cogc_stats(use_median=True) == 1
+
+    def test_cogc(self, cogc):
+        assert cogc.cogc_stats(use_median=False) == (0 + 6 + 0) / 3
+        assert cogc.cogc_stats(use_median=True) == 0
+
+    def test_empty(self, empty):
+        assert empty.cogc_stats() == 0
+
+    def test_comment_only(self, comment_only):
+        assert comment_only.cogc_stats() == 0

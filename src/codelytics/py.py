@@ -1,6 +1,8 @@
 import ast
 import pathlib
 
+import complexipy
+
 import pandas as pd
 from radon.complexity import cc_visit
 from radon.raw import analyze
@@ -237,5 +239,47 @@ class Py:
                 return float(pd.Series(complexities).median())
             else:
                 return float(pd.Series(complexities).mean())
+        except Exception:
+            return 0.0
+
+    def cogc_stats(self, use_median=False):
+        """
+        Return the mean or median cognitive complexity per function.
+
+        Cognitive complexity measures how difficult code is to understand by humans,
+        focusing on readability rather than testability. Includes all functions
+        and methods (regular functions, class methods, static methods, etc.).
+
+        Requires complexipy library: pip install complexipy
+
+        Parameters
+        ----------
+        use_median : bool, optional
+            If True, returns median cognitive complexity per function.
+            If False, returns mean cognitive complexity per function (default).
+
+        Returns
+        -------
+        float
+            Mean or median cognitive complexity per function.
+            Returns 0.0 if no functions are found or if complexipy is not available.
+        """
+        try:
+            result = complexipy.code_complexity(self.content)
+
+            # Extract individual function complexities
+            if hasattr(result, "functions") and result.functions:
+                complexities = [func.complexity for func in result.functions]
+            else:
+                return 0.0
+
+            if not complexities:
+                return 0.0
+
+            if use_median:
+                return float(pd.Series(complexities).median())
+            else:
+                return float(pd.Series(complexities).mean())
+
         except Exception:
             return 0.0

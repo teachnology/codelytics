@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [{ name = "marijanbeg", email = "m.beg@imperial.ac.uk" }]
 requires-python = ">=3.13"
 dependencies = [
+    "complexipy>=3.0.0",
     "pandas>=2.3.0",
     "pymupdf>=1.26.1",
     "radon>=6.0.1",

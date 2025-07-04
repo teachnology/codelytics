@@ -2,7 +2,6 @@ import ast
 import pathlib
 
 import complexipy
-
 import pandas as pd
 from radon.complexity import cc_visit
 from radon.metrics import h_visit

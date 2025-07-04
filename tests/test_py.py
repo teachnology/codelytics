@@ -25,6 +25,13 @@ def imports():
 
 
 @pytest.fixture
+def cc():
+    return Py(
+        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file04.py"
+    )
+
+
+@pytest.fixture
 def comment_only():
     code = """# Just a comment
 # Another comment
@@ -241,3 +248,20 @@ class TestNModules:
 
     def test_imports(self, imports):
         assert imports.n_imported_modules() == 2  # math and operator
+
+
+class TestTotalCyclomaticComplexity:
+    def test_simple(self, simple):
+        assert simple.cc_stats(use_median=False) == 1
+        assert simple.cc_stats(use_median=True) == 1
+
+    def test_complex(self, complex):
+        assert complex.cc_stats(use_median=False) == (2 + 1 + 2) / 3
+        assert complex.cc_stats(use_median=True) == 2
+
+    def test_cc(self, cc):
+        assert cc.cc_stats(use_median=False) == (1 + 3 + 1 + 2) / 4
+        assert cc.cc_stats(use_median=True) == 1.5
+
+    def test_empty(self, empty):
+        assert empty.cc_stats() == 0

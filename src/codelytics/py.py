@@ -1,24 +1,25 @@
 import ast
 import pathlib
 
+import pandas as pd
+
 from radon.complexity import cc_visit
 from radon.raw import analyze
 from radon.visitors import Class, Function
 
 
 class Py:
-    """Analyse Python code metrics including lines of code measurements."""
+    """Analyse Python code metrics.
+
+    Parameters
+    ----------
+    source : pathlib.Path or str
+        Either a Path object pointing to a Python file or a string containing Python
+        code.
+
+    """
 
     def __init__(self, source):
-        """
-        Initialise the Py analyser with Python source code.
-
-        Parameters
-        ----------
-        source : pathlib.Path or str
-            Either a Path object pointing to a Python file or a string containing Python
-            code.
-        """
         if isinstance(source, pathlib.Path):
             if not source.exists():
                 raise FileNotFoundError(f"Python file not found: {source}")
@@ -35,7 +36,7 @@ class Py:
         Return the number of physical lines of code.
 
         Physical lines of code includes all lines in the file including blank lines,
-        comments, and code lines.
+        comments, docstrings, and code lines.
 
         Returns
         -------
@@ -43,8 +44,7 @@ class Py:
             Number of physical lines of code.
         """
         try:
-            module = analyze(self.content)
-            return module.loc
+            return analyze(self.content).loc
         except Exception:
             # Fallback for any parsing errors
             return len(self.content.splitlines())
@@ -54,7 +54,9 @@ class Py:
         Return the number of logical lines of code.
 
         Logical lines of code represents the number of executable statements.
-        This uses Radon's analysis to count actual Python statements.
+        This uses Radon's analysis to count actual Python statements. It includes docstrings, but excludes comments and blank lines.
+
+        If the content cannot be parsed, it returns 0.
 
         Returns
         -------
@@ -62,8 +64,7 @@ class Py:
             Number of logical lines of code.
         """
         try:
-            module = analyze(self.content)
-            return module.lloc
+            return analyze(self.content).lloc
         except Exception:
             return 0
 
@@ -72,7 +73,9 @@ class Py:
         Return the number of source lines of code.
 
         Source lines of code excludes blank lines, comments, and docstrings.
-        Only actual executable code lines are counted.
+        Only actual executable code lines are counted. Command continuation lines are counted as multiple lines.
+
+        If the content cannot be parsed, it returns 0.
 
         Returns
         -------
@@ -80,14 +83,13 @@ class Py:
             Number of source lines of code.
         """
         try:
-            module = analyze(self.content)
-            return module.sloc
+            return analyze(self.content).sloc
         except Exception:
             return 0
 
     def n_char(self):
         """
-        Return the number of characters in the Python code.
+        Return the number of characters.
 
         Returns
         -------
@@ -98,10 +100,12 @@ class Py:
 
     def n_functions(self):
         """
-        Return the number of functions in the Python code.
+        Return the number of functions.
 
         Counts function definitions including regular functions, async functions,
         methods, static methods, class methods, and nested functions.
+
+        If the content cannot be parsed, it returns 0.
 
         Returns
         -------
@@ -111,8 +115,7 @@ class Py:
         try:
             results = cc_visit(self.content)
             # Count only Function objects, excluding Class objects
-            function_count = sum(1 for item in results if isinstance(item, Function))
-            return function_count
+            return sum(1 for item in results if isinstance(item, Function))
         except Exception:
             return 0
 
@@ -131,8 +134,7 @@ class Py:
         try:
             results = cc_visit(self.content)
             # Count only Class objects, excluding Function objects
-            class_count = sum(1 for item in results if isinstance(item, Class))
-            return class_count
+            return sum(1 for item in results if isinstance(item, Class))
         except Exception:
             return 0
 
@@ -157,7 +159,7 @@ class Py:
             import_count = 0
 
             for node in ast.walk(tree):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                if isinstance(node, ast.Import | ast.ImportFrom):
                     import_count += 1
 
             return import_count
@@ -175,6 +177,8 @@ class Py:
         - from pathlib import Path; import pathlib → 1 module (pathlib)
         - from . import local → 0 modules (relative import)
 
+        If the content cannot be parsed, it returns 0.
+
         Returns
         -------
         int
@@ -188,15 +192,49 @@ class Py:
                 if isinstance(node, ast.Import):
                     # Handle: import module, import module.submodule
                     for alias in node.names:
-                        module_name = alias.name.split(".")[0]
-                        modules.add(module_name)
+                        modules.add(alias.name.split(".")[0])
 
                 elif isinstance(node, ast.ImportFrom):
                     # Handle: from module import something
                     if node.module:  # Skip relative imports (from . import ...)
-                        module_name = node.module.split(".")[0]
-                        modules.add(module_name)
+                        modules.add(node.module.split(".")[0])
 
             return len(modules)
         except Exception:
             return 0
+
+    def cc_stats(self, use_median=False):
+        """
+        Return the mean or median cyclomatic complexity per function.
+
+        Calculates complexity statistics for individual functions and methods,
+        including class methods, static methods, and regular functions.
+
+        Parameters
+        ----------
+        use_median : bool, optional
+            If True, returns median complexity per function.
+            If False, returns mean complexity per function (default).
+
+        Returns
+        -------
+        float
+            Mean or median cyclomatic complexity per function.
+            Returns 0.0 if no functions are found.
+        """
+        try:
+            complexities = [
+                item.complexity
+                for item in cc_visit(self.content)
+                if isinstance(item, Function)
+            ]
+
+            if not complexities:
+                return 0.0
+
+            if use_median:
+                return float(pd.Series(complexities).median())
+            else:
+                return float(pd.Series(complexities).mean())
+        except Exception:
+            return 0.0

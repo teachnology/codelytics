@@ -2,7 +2,6 @@ import ast
 import pathlib
 
 import pandas as pd
-
 from radon.complexity import cc_visit
 from radon.raw import analyze
 from radon.visitors import Class, Function
@@ -53,8 +52,9 @@ class Py:
         """
         Return the number of logical lines of code.
 
-        Logical lines of code represents the number of executable statements.
-        This uses Radon's analysis to count actual Python statements. It includes docstrings, but excludes comments and blank lines.
+        Logical lines of code represents the number of executable statements. This uses
+        Radon's analysis to count actual Python statements. It includes docstrings, but
+        excludes comments and blank lines.
 
         If the content cannot be parsed, it returns 0.
 
@@ -72,8 +72,9 @@ class Py:
         """
         Return the number of source lines of code.
 
-        Source lines of code excludes blank lines, comments, and docstrings.
-        Only actual executable code lines are counted. Command continuation lines are counted as multiple lines.
+        Source lines of code excludes blank lines, comments, and docstrings. Only actual
+        executable code lines are counted. Command continuation lines are counted as
+        multiple lines.
 
         If the content cannot be parsed, it returns 0.
 

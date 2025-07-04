@@ -5,6 +5,7 @@ import complexipy
 
 import pandas as pd
 from radon.complexity import cc_visit
+from radon.metrics import h_visit
 from radon.raw import analyze
 from radon.visitors import Class, Function
 
@@ -250,7 +251,7 @@ class Py:
         focusing on readability rather than testability. Includes all functions
         and methods (regular functions, class methods, static methods, etc.).
 
-        Requires complexipy library: pip install complexipy
+        Based on complexipy.
 
         Parameters
         ----------
@@ -283,3 +284,85 @@ class Py:
 
         except Exception:
             return 0.0
+
+    def halstead_stats(self, use_median=False):
+        """
+        Return Halstead complexity metrics as a pandas Series.
+
+        Halstead metrics measure program complexity based on the number of
+        operators and operands in the code. Can return mean or median values
+        per function.
+
+        Parameters
+        ----------
+        use_median : bool, optional
+            If True, returns median Halstead metrics per function.
+            If False, returns mean Halstead metrics per function (default).
+
+        Returns
+        -------
+        pandas.Series
+            Series with Halstead metrics as values and metric names as index:
+            - 'vocabulary' (n): Program vocabulary (n1 + n2)
+            - 'length' (N): Program length (N1 + N2)
+            - 'volume' (V): Program volume (N * log2(n))
+            - 'difficulty' (D): Program difficulty (n1/2 * N2/n2)
+            - 'effort' (E): Program effort (D * V)
+
+            Returns Series with zeros if no functions found or parsing fails.
+        """
+        zero_series = pd.Series(
+            {
+                "vocabulary": 0.0,
+                "length": 0.0,
+                "volume": 0.0,
+                "difficulty": 0.0,
+                "effort": 0.0,
+            }
+        )
+
+        try:
+            # print(function_reports)
+            halstead_data = h_visit(self.content)
+
+            # Extract per-function metrics
+            if not halstead_data.functions:
+                return zero_series
+
+            # Get HalsteadReport objects for each function
+            function_reports = [report for _, report in halstead_data.functions]
+
+            print(1000*"-")
+            print(function_reports)
+
+            # Extract metric arrays
+            vocabularies = [report.vocabulary for report in function_reports]
+            lengths = [report.length for report in function_reports]
+            volumes = [report.volume for report in function_reports]
+            difficulties = [report.difficulty for report in function_reports]
+            efforts = [report.effort for report in function_reports]
+
+            # Calculate mean or median using pandas
+            if use_median:
+                return pd.Series(
+                    {
+                        "vocabulary": float(pd.Series(vocabularies).median()),
+                        "length": float(pd.Series(lengths).median()),
+                        "volume": float(pd.Series(volumes).median()),
+                        "difficulty": float(pd.Series(difficulties).median()),
+                        "effort": float(pd.Series(efforts).median()),
+                    }
+                )
+            else:
+                return pd.Series(
+                    {
+                        "vocabulary": float(pd.Series(vocabularies).mean()),
+                        "length": float(pd.Series(lengths).mean()),
+                        "volume": float(pd.Series(volumes).mean()),
+                        "difficulty": float(pd.Series(difficulties).mean()),
+                        "effort": float(pd.Series(efforts).mean()),
+                    }
+                )
+
+        except Exception:
+            return zero_series

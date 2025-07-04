@@ -1,6 +1,7 @@
 import pathlib
 
 import pytest
+import numpy as np
 
 from codelytics import Py
 
@@ -30,11 +31,20 @@ def cc():
         pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file04.py"
     )
 
+
 @pytest.fixture
 def cogc():
     return Py(
         pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file05.py"
     )
+
+
+@pytest.fixture
+def halstead():
+    return Py(
+        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file06.py"
+    )
+
 
 @pytest.fixture
 def comment_only():
@@ -274,6 +284,7 @@ class TestCyclomaticComplexity:
     def test_comment_only(self, comment_only):
         assert comment_only.cc_stats() == 0
 
+
 class TestCognitiveComplexity:
     def test_simple(self, simple):
         assert simple.cogc_stats(use_median=False) == 0
@@ -292,3 +303,32 @@ class TestCognitiveComplexity:
 
     def test_comment_only(self, comment_only):
         assert comment_only.cogc_stats() == 0
+
+
+class TestHalsteadMetrics:
+    def test_simple(self, simple):
+        assert simple.halstead_stats().mean() == 0.0
+
+    def test_halstead(self, halstead):
+        metrics = halstead.halstead_stats(use_median=False)
+        assert metrics.mean() > 0.0
+
+        vocabulary = (3 + 3 + 5) / 3
+        assert np.isclose(metrics.loc["vocabulary"], vocabulary)
+
+        length = (3 + 3 + 6) / 3
+        assert np.isclose(metrics.loc["length"], length)
+
+        volume = (3 * np.log2(3) + 3 * np.log2(3) + 6 * np.log2(5)) / 3
+        assert np.isclose(metrics.loc["volume"], volume)
+
+        difficulty = (1 / 2 * 2 / 2 + 1 / 2 * 2 / 2 + 2 / 2 * 4 / 3) / 3
+        assert np.isclose(metrics.loc["difficulty"], difficulty)
+
+        assert metrics.loc["effort"] >= 0
+
+    def test_empty(self, empty):
+        assert empty.halstead_stats().mean() == 0.0
+
+    def test_comment_only(self, comment_only):
+        assert comment_only.halstead_stats().mean() == 0.0

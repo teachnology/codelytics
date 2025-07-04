@@ -382,7 +382,7 @@ class Py:
 
             for node in ast.walk(tree):
                 # Function definitions
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef)):
                     user_names.add(node.name)
                     # Function parameters
                     for arg in node.args.args:
@@ -443,7 +443,7 @@ class Py:
 
                 # Comprehension variables
                 elif isinstance(
-                    node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+                    node, (ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp)
                 ):
                     for generator in node.generators:
                         if isinstance(generator.target, ast.Name):

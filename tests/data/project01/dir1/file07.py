@@ -11,6 +11,7 @@ class Calculator:  # 'Calculator' included
         self.history.append(result)  # 'history' included
         return result
 
+
 def process_data(data):  # 'process_data', 'data' included
     results = []  # 'results' included
 

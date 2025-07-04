@@ -47,6 +47,13 @@ def halstead():
 
 
 @pytest.fixture
+def user_defined_names():
+    return Py(
+        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file07.py"
+    )
+
+
+@pytest.fixture
 def comment_only():
     code = """# Just a comment
 # Another comment
@@ -350,3 +357,39 @@ class TestHalsteadMetrics:
 
     def test_comment_only(self, comment_only):
         assert comment_only.halstead_stats().mean() == 0.0
+
+
+class TestUserDefinedNames:
+    def test_simple(self, simple):
+        assert simple.user_defined_names() == {"hello"}
+
+    def test_user_defined_names(self, user_defined_names):
+        names = user_defined_names.user_defined_names()
+
+        expected = {
+            "counter",
+            "total_sum",
+            "n",
+            "process_data",
+            "data",
+            "results",
+            "item",
+            "value",
+            "squared",
+            "x",
+            "f",
+            "e",
+            "Calculator",
+            "name",
+            "add",
+            "result",
+            "history",
+            "y",
+        }
+        assert names == expected
+
+    def test_empty(self, empty):
+        assert empty.user_defined_names() == set()
+
+    def test_comment_only(self, comment_only):
+        assert comment_only.user_defined_names() == set()

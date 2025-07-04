@@ -322,7 +322,6 @@ class Py:
         )
 
         try:
-            # print(function_reports)
             halstead_data = h_visit(self.content)
 
             # Extract per-function metrics
@@ -331,9 +330,6 @@ class Py:
 
             # Get HalsteadReport objects for each function
             function_reports = [report for _, report in halstead_data.functions]
-
-            print(1000*"-")
-            print(function_reports)
 
             # Extract metric arrays
             vocabularies = [report.vocabulary for report in function_reports]

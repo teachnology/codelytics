@@ -309,7 +309,7 @@ class TestHalsteadMetrics:
     def test_simple(self, simple):
         assert simple.halstead_stats().mean() == 0.0
 
-    def test_halstead(self, halstead):
+    def test_halstead_mean(self, halstead):
         metrics = halstead.halstead_stats(use_median=False)
         assert metrics.mean() > 0.0
 
@@ -323,6 +323,24 @@ class TestHalsteadMetrics:
         assert np.isclose(metrics.loc["volume"], volume)
 
         difficulty = (1 / 2 * 2 / 2 + 1 / 2 * 2 / 2 + 2 / 2 * 4 / 3) / 3
+        assert np.isclose(metrics.loc["difficulty"], difficulty)
+
+        assert metrics.loc["effort"] >= 0
+
+    def test_halstead_median(self, halstead):
+        metrics = halstead.halstead_stats(use_median=True)
+        assert metrics.mean() > 0.0
+
+        vocabulary = np.median([3, 3, 5])
+        assert np.isclose(metrics.loc["vocabulary"], vocabulary)
+
+        length = np.median([3, 3, 6])
+        assert np.isclose(metrics.loc["length"], length)
+
+        volume = np.median([3 * np.log2(3), 3 * np.log2(3), 6 * np.log2(5)])
+        assert np.isclose(metrics.loc["volume"], volume)
+
+        difficulty = np.median([1 / 2 * 2 / 2, 1 / 2 * 2 / 2, 2 / 2 * 4 / 3])
         assert np.isclose(metrics.loc["difficulty"], difficulty)
 
         assert metrics.loc["effort"] >= 0

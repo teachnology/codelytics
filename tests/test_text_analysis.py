@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 from codelytics import Comments, Docstrings, TextAnalysis
 import numpy as np
+import pathlib
 
 
 @pytest.fixture
@@ -38,6 +39,17 @@ def messy():
             "add value",
             "Multiple words with numbers 123 and symbols!",
             "Messy text with inconsistent spacing and punctuation...",
+        ]
+    )
+
+
+@pytest.fixture
+def spell_check():
+    return TextAnalysis(
+        [
+            "This is a simple test.",
+            "Ths is a smple tst with some misspelled words.",
+            "Another sentence with no errors.",
         ]
     )
 
@@ -116,7 +128,24 @@ class TestNSentences:
         assert messy.n_sentences(total=True) == 3
 
 
-# class TestDocstrings:
-#     def test_docstrings_inheritance(self, docstrings_obj):
-#         assert docstrings_obj.n_words() == (2 + 4 + 1) / 3
-#         assert len(docstrings_obj) == 3
+class TestDerived:
+    def test_comments_inheritance(self, simple):
+        assert Comments(simple.texts).n_words() == simple.n_words()
+        assert Docstrings(simple.texts).n_words() == simple.n_words()
+
+
+class TestSpellCheck:
+    def test_spell_check(self, spell_check):
+        assert spell_check.misspelled_words(total=True) == 3
+        assert np.isclose(
+            spell_check.misspelled_words(total=False, use_median=False), 1
+        )
+        assert np.isclose(spell_check.misspelled_words(total=False, use_median=True), 0)
+
+    def test_spell_check_empty(self, empty):
+        assert empty.misspelled_words() == 0.0
+        assert empty.misspelled_words(total=True) == 0
+
+    def test_spell_check_no_errors(self, simple):
+        assert simple.misspelled_words() == 0.0
+        assert simple.misspelled_words(total=True) == 0

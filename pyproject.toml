@@ -8,8 +8,8 @@ requires-python = ">=3.13"
 dependencies = [
     "complexipy>=3.0.0",
     "pandas>=2.3.0",
-    "pydocstyle>=6.3.0",
     "pymupdf>=1.26.1",
+    "pyspellchecker>=0.8.3",
     "radon>=6.0.1",
 ]
 license = "MIT"

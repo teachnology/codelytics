@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-
+from spellchecker import SpellChecker
 
 class TextAnalysis:
     """
@@ -134,3 +134,58 @@ class TextAnalysis:
             sentence_counts.append(len(sentences))
 
         return self._stat(sentence_counts, total, use_median)
+
+    def misspelled_words(self, total=False, use_median=False):
+        """
+        Return misspelled word count statistics.
+
+        Counts misspelled words in all texts using the pyspellchecker library.
+        Only counts actual words (excludes code-like tokens, URLs, etc.).
+
+        Parameters
+        ----------
+        total : bool, optional
+            If True, returns total number of misspelled words across all texts.
+            If False, returns mean or median misspelled words per text (default).
+        use_median : bool, optional
+            If True and total=False, returns median misspelled words per text.
+            If False and total=False, returns mean misspelled words per text.
+            Ignored when total=True.
+
+        Returns
+        -------
+        int or float
+            Total, mean, or median misspelled word count.
+            Returns 0 or 0.0 if spellchecker is not available.
+        """
+        try:
+            spell = SpellChecker()
+            misspelled_counts = []
+
+            for text in self.texts:
+                # Split into words and clean them
+                words = text.split()
+                cleaned_words = []
+
+                for word in words:
+                    # Remove punctuation and convert to lowercase
+                    cleaned_word = re.sub(r"[^\w]", "", word.lower())
+
+                    # Only include words that are likely actual words (not code, numbers, etc.)
+                    if (
+                        cleaned_word
+                        and cleaned_word.isalpha()
+                        and len(cleaned_word) > 1
+                        and not cleaned_word.isupper()
+                    ):  # Skip ALL_CAPS (likely constants)
+                        cleaned_words.append(cleaned_word)
+
+                # Find misspelled words
+                misspelled = spell.unknown(cleaned_words)
+                misspelled_counts.append(len(misspelled))
+
+            return self._stat(misspelled_counts, total, use_median)
+
+        except ImportError:
+            # Fallback if pyspellchecker is not available
+            return 0

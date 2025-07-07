@@ -128,7 +128,7 @@ class TestFileIteration:
 
         # All files should have .py extension
         assert all(f.suffix == ".py" for f in py_files)
-        assert len(py_files) == 7
+        assert len(py_files) == 9
 
     def test_iter_files_with_suffix_md(self, dir):
         md_files = list(dir.iter_files(suffix=".md"))
@@ -160,8 +160,8 @@ class TestFileCounting:
         assert total_files == len(list(dir))
 
     def test_files_with_suffix(self, dir):
-        assert dir.n_files("py") == 7
-        assert dir.n_files(".py") == 7
+        assert dir.n_files("py") == 9
+        assert dir.n_files(".py") == 9
         assert dir.n_files("md") == 1
 
     def test_files_empty_directory(self, tmp_path):

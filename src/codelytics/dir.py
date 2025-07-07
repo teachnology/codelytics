@@ -151,3 +151,75 @@ class Dir:
             Number of files matching the criteria
         """
         return sum(1 for _ in self.iter_files(suffix))
+
+    def extract(self, content_type):
+        """
+        Extract and merge content from all files in the directory.
+
+        Extracts content from Python files, Jupyter notebooks, and Markdown files
+        based on the specified content type.
+
+        Parameters
+        ----------
+        content_type : str
+            Type of content to extract. Options are:
+            - 'code': Extract Python code from .py files and code cells from .ipynb files
+            - 'markdown': Extract content from .md files and markdown cells from .ipynb files
+
+        Returns
+        -------
+        str
+            All content of the specified type merged together as a single string.
+            Each file's content is separated by double newlines.
+            Returns empty string if no files found or content type not recognized.
+        """
+        if content_type not in ["code", "markdown"]:
+            return ""
+
+        content_parts = []
+
+        for file_path in self:
+            try:
+                if content_type == "code":
+                    # Extract Python code
+                    if file_path.suffix == ".py":
+                        content = file_path.read_text(encoding="utf-8")
+                        if content.strip():
+                            content_parts.append(content)
+
+                    elif file_path.suffix == ".ipynb":
+                        try:
+                            from .notebook import Notebook  # Assuming relative import
+
+                            nb = Notebook(file_path)
+                            code_content = nb.extract("code")
+                            if code_content.strip():
+                                content_parts.append(code_content)
+                        except Exception:
+                            # Skip notebooks that can't be parsed
+                            continue
+
+                elif content_type == "markdown":
+                    # Extract Markdown content
+                    if file_path.suffix == ".md":
+                        content = file_path.read_text(encoding="utf-8")
+                        if content.strip():
+                            content_parts.append(content)
+
+                    elif file_path.suffix == ".ipynb":
+                        try:
+                            from .notebook import Notebook  # Assuming relative import
+
+                            nb = Notebook(file_path)
+                            markdown_content = nb.extract("markdown")
+                            if markdown_content.strip():
+                                content_parts.append(markdown_content)
+                        except Exception:
+                            # Skip notebooks that can't be parsed
+                            continue
+
+            except (UnicodeDecodeError, PermissionError):
+                # Skip files that can't be read
+                continue
+
+        return "\n\n".join(content_parts)

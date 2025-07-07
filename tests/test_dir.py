@@ -171,3 +171,22 @@ class TestFileCounting:
 
     def test_files_nonexistent_suffix(self, dir):
         assert dir.n_files("xyz") == 0
+
+
+class TestExtract:
+    def test_extract_code(self, dir):
+        code = dir.extract("code")
+        assert isinstance(code, str)
+        assert len(code) > 0
+
+        assert 'return "world"  # inline comment' in code
+        assert "total_sum = sum([1, 2, 3])  # 'total_sum' included" in code
+        assert "print(df)" in code
+
+    def test_extract_markdown(self, dir):
+        md = dir.extract("markdown")
+        assert isinstance(md, str)
+        assert len(md) > 0
+
+        assert "This is a readme file." in md
+        assert "## Analysis" in md

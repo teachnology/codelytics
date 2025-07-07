@@ -14,7 +14,7 @@ def function_one():
     """Function docstring."""
     x = 1
     if x > 0:
-        return x
+        return x  # inline comment
     else:
         return 0
 

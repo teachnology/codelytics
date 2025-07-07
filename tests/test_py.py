@@ -109,14 +109,6 @@ def whitespace_only():
 
 
 @pytest.fixture
-def inline_comments():
-    code = """x = 1  # This is an inline comment
-y = 2  # Another inline comment
-"""
-    return Py(code)
-
-
-@pytest.fixture
 def empty():
     return Py("")
 
@@ -215,11 +207,6 @@ class TestEdgeCases:
         assert whitespace_only.loc() == 3
         assert whitespace_only.sloc() == 0
         assert whitespace_only.lloc() == 0
-
-    def test_inline_comments_counted_as_source(self, inline_comments):
-        assert inline_comments.loc() == 2
-        assert inline_comments.lloc() == 2
-        assert inline_comments.sloc() == 2
 
 
 class TestNFunctions:
@@ -411,3 +398,63 @@ class TestUserDefinedNames:
 
     def test_comment_only(self, comment_only):
         assert comment_only.user_defined_names() == set()
+
+
+class TestComments:
+    def test_comment_only(self, comment_only):
+        comments = comment_only.comments()
+        assert len(comments) == 3
+        assert comments[0] == "Just a comment"
+        assert comments[1] == "Another comment"
+        assert comments[2] == "Third comment"
+
+    def test_complex(self, complex):
+        comments = complex.comments()
+        assert len(comments) == 4
+        assert comments[0] == "Comment line"
+
+    def test_mixed_docstrings(self, mixed_docstrings):
+        comments = mixed_docstrings.comments()
+        assert len(comments) == 4
+        assert comments[0] == "Header comment"
+        assert comments[1] == "inline comment"
+        assert comments[2] == "Another comment"
+        assert comments[3] == "Footer comment"
+
+    def test_unicode_content(self, unicode_content):
+        comments = unicode_content.comments()
+        assert len(comments) == 1
+        assert comments[0] == "Comment with unicode: café"
+
+    def test_multiline_strings(self, multiline_strings):
+        comments = multiline_strings.comments()
+        assert len(comments) == 0
+
+    def test_whitespace_only(self, whitespace_only):
+        comments = whitespace_only.comments()
+        assert len(comments) == 0
+
+    def test_empty(self, empty):
+        comments = empty.comments()
+        assert len(comments) == 0
+
+
+class TestDocstrings:
+    def test_simple(self, simple):
+        docstrings = simple.docstrings()
+        assert len(docstrings) == 0
+
+    def test_complex(self, complex):
+        docstrings = complex.docstrings()
+        assert len(docstrings) == 3
+        assert "Module docstring" in docstrings[0]
+        assert docstrings[1] == "Function docstring."
+        assert docstrings[2] == "Class docstring."
+
+    def test_empty(self, empty):
+        docstrings = empty.docstrings()
+        assert len(docstrings) == 0
+
+    def test_comment_only(self, comment_only):
+        docstrings = comment_only.docstrings()
+        assert len(docstrings) == 0

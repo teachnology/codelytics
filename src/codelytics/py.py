@@ -1,5 +1,7 @@
 import ast
 import pathlib
+import tokenize
+import io
 
 import complexipy
 import pandas as pd
@@ -521,3 +523,79 @@ class Py:
 
         except Exception:
             return set()
+
+    def comments(self):
+        """
+        Return all comments found in the source code.
+
+        Extracts all single-line (#) and multi-line comments from the Python source.
+        Excludes docstrings (triple-quoted strings used as documentation).
+
+        Returns
+        -------
+        list of str
+            List of comment strings with leading # and whitespace stripped.
+            Returns empty list if parsing fails or no comments found.
+        """
+        try:
+            comments = []
+            tokens = tokenize.generate_tokens(io.StringIO(self.content).readline)
+
+            for token in tokens:
+                if token.type == tokenize.COMMENT:
+                    # Strip the # and any leading/trailing whitespace
+                    comment_text = token.string.lstrip("#").strip()
+                    if comment_text:  # Only add non-empty comments
+                        comments.append(comment_text)
+
+            return comments
+
+        except Exception:
+            return []
+
+    def docstrings(self):
+        """
+        Return all docstrings found in the source code.
+
+        Extracts docstrings from modules, classes, functions, and methods.
+        A docstring is the first string literal in a module, class, or function body.
+
+        Returns
+        -------
+        list of str
+            List of docstring contents with leading/trailing whitespace stripped.
+            Returns empty list if parsing fails or no docstrings found.
+        """
+        try:
+            tree = ast.parse(self.content)
+            docstrings = []
+
+            def extract_docstring(node):
+                """Extract docstring from a node if it exists."""
+                if (
+                    node.body
+                    and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Constant)
+                    and isinstance(node.body[0].value.value, str)
+                ):
+                    return node.body[0].value.value.strip()
+                return None
+
+            # Module docstring
+            module_docstring = extract_docstring(tree)
+            if module_docstring:
+                docstrings.append(module_docstring)
+
+            # Walk through all nodes to find classes and functions
+            for node in ast.walk(tree):
+                if isinstance(
+                    node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                ):
+                    docstring = extract_docstring(node)
+                    if docstring:
+                        docstrings.append(docstring)
+
+            return docstrings
+
+        except Exception:
+            return []

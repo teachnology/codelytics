@@ -53,6 +53,39 @@ def spell_check():
     )
 
 
+@pytest.fixture
+def why_or_what():
+    return TextAnalysis(
+        [
+            # 'Why' comments (explaining rationale/reasoning)
+            "Use binary search because linear search is too slow for large datasets",
+            "Cache results to avoid expensive database queries",
+            "TODO: Refactor this code due to performance issues",
+            "Hack: Using string comparison since datetime parsing fails on old versions",
+            "Important: Always validate input to prevent SQL injection attacks",
+            "We need this workaround for IE compatibility",
+            "This optimization improves response time by 50%",
+            "Disable logging in production for security reasons",
+            "Keep this for backwards compatibility with v1.0",
+            "Design decision: Using composition over inheritance here",
+            # 'What' comments (describing actions/implementation)
+            "Initialize the counter to zero",
+            "Loop through all items in the list",
+            "Get the current user from session",
+            "This function calculates the total price",
+            "First, validate the input parameters",
+            "Then, process each record in the database",
+            "Finally, return the formatted result",
+            "Here we create a new instance of the class",
+            "Sort the array in ascending order",
+            "Parse the JSON response from the API",
+            "Print debug information to console",
+            "Set the default configuration values",
+            "",  # Empty comment
+        ]
+    )
+
+
 class TestInit:
     def test_comments_init(self, simple):
         assert len(simple.texts) == 3
@@ -141,10 +174,21 @@ class TestSpellCheck:
         )
         assert np.isclose(spell_check.misspelled_words(total=False, use_median=True), 0)
 
-    def test_spell_check_empty(self, empty):
+    def test_empty(self, empty):
         assert empty.misspelled_words() == 0.0
         assert empty.misspelled_words(total=True) == 0
 
-    def test_spell_check_no_errors(self, simple):
+    def test_no_errors(self, simple):
         assert simple.misspelled_words() == 0.0
         assert simple.misspelled_words(total=True) == 0
+
+
+class TestWhyOrWhat:
+    def test_total(self, why_or_what):
+        # Should count approximately 10-11 'why' comments out of 26 total
+        assert 8 <= why_or_what.why_or_what(total=True) <= 12
+
+    def test_mean(self, why_or_what):
+        result = why_or_what.why_or_what()
+        # Should be around 0.4-0.5 (proportion of 'why' comments)
+        assert 0.3 <= result <= 0.6

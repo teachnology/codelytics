@@ -191,3 +191,115 @@ class TextAnalysis:
         except ImportError:
             # Fallback if pyspellchecker is not available
             return 0
+
+    def why_or_what(self, total=False, use_median=False):
+        """
+        Return count of texts that explain 'why' versus 'what'.
+
+        Analyzes texts to determine if they explain the rationale/reason (why)
+        or describe what the code is doing (what). Useful for evaluating
+        comment quality - good comments explain why, not what.
+
+        Parameters
+        ----------
+        total : bool, optional
+            If True, returns total number of 'why' texts across all texts.
+            If False, returns mean or median 'why' texts per text (default).
+        use_median : bool, optional
+            If True and total=False, returns median 'why' texts per text.
+            If False and total=False, returns mean 'why' texts per text.
+            Ignored when total=True.
+
+        Returns
+        -------
+        int or float
+            Total, mean, or median count of texts that explain 'why'.
+            Returns 0 or 0.0 if no texts found.
+        """
+        why_counts = []
+
+        for text in self.texts:
+            if not text.strip():
+                why_counts.append(0)
+                continue
+
+            text_lower = text.lower()
+            why_score = 0
+            what_score = 0
+
+            # Strong 'why' indicators (higher weight)
+            strong_why_patterns = [
+                r"\b(because|since|due to|reason|rationale)\b",
+                r"\b(to avoid|to prevent|to ensure|to guarantee)\b",
+                r"\b(performance|optimization|efficiency|speed)\b",
+                r"\b(security|safety|protection|vulnerability)\b",
+                r"\b(compatibility|support|legacy|backwards)\b",
+                r"\b(hack|workaround|fixme|todo)\b",
+                r"\b(important|warning|note|careful|attention)\b",
+                r"\b(design decision|trade-?off|compromise)\b",
+                r"\b(expensive|slow|fast|improve|better)\b",
+            ]
+
+            for pattern in strong_why_patterns:
+                matches = len(re.findall(pattern, text_lower))
+                why_score += matches * 3  # Higher weight for strong indicators
+
+            # Moderate 'why' indicators
+            moderate_why_patterns = [
+                r"\b(bug|issue|problem|fix)\b",
+                r"\b(requirement|needed|necessary)\b",
+                r"\b(limitation|constraint|restriction)\b",
+                r"\b(assumption|expect|assume)\b",
+                r"\b(why|purpose|motivation)\b",
+            ]
+
+            for pattern in moderate_why_patterns:
+                matches = len(re.findall(pattern, text_lower))
+                why_score += matches * 2
+
+            # Strong 'what' indicators (only descriptive actions without rationale)
+            strong_what_patterns = [
+                r"^(initialize|setup|configure|prepare)\b",
+                r"^(get|set|create|delete|update|modify)\b",
+                r"^(call|invoke|execute|run|process)\b",
+                r"^(return|output|result|value)\b",
+                r"^(loop|iterate|through|over)\b",
+                r"^(calculate|compute|determine|find)\b",
+                r"^(parse|format|convert|transform)\b",
+                r"^(store|save|load|read|write)\b",
+                r"^(sort|filter|search|match)\b",
+                r"^(print|display|show|log)\b",
+                r"\b(this function|this method|here we)\b",
+            ]
+
+            for pattern in strong_what_patterns:
+                matches = len(re.findall(pattern, text_lower))
+                what_score += matches * 2
+
+            # Step-by-step indicators (strong 'what')
+            if any(
+                phrase in text_lower
+                for phrase in ["first,", "then,", "next,", "finally,", "step "]
+            ):
+                what_score += 2
+
+            # Additional context clues
+            if any(
+                phrase in text_lower
+                for phrase in [
+                    "attack",
+                    "injection",
+                    "version",
+                    "old",
+                    "new",
+                    "time",
+                    "memory",
+                ]
+            ):
+                why_score += 1
+
+            # Determine if this text explains 'why' (1) or 'what' (0)
+            explains_why = 1 if why_score > what_score else 0
+            why_counts.append(explains_why)
+
+        return self._stat(why_counts, total, use_median)

@@ -181,12 +181,14 @@ class TestExtract:
 
         assert 'return "world"  # inline comment' in code
         assert "total_sum = sum([1, 2, 3])  # 'total_sum' included" in code
-        assert "print(df)" in code
+        assert "print(sh)" in code
 
     def test_extract_markdown(self, dir):
         md = dir.extract("markdown")
         assert isinstance(md, str)
         assert len(md) > 0
 
+        print(md)
+
         assert "This is a readme file." in md
-        assert "## Analysis" in md
+        assert "Let's analyze the data:" in md

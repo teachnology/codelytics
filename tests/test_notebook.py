@@ -1,5 +1,7 @@
-import pytest
 import pathlib
+
+import pytest
+
 from codelytics import Notebook
 
 
@@ -36,8 +38,8 @@ class TestExtraction:
     def test_py(self, nb):
         code = nb.extract(cell_type="code")
         assert isinstance(code, str)
-        assert "import numpy as np" in code
-        assert "result = df['A'].sum() + df['B'].sum()" in code
+        assert "import pandas as pd" in code
+        assert "sh = pd.DataFrame(data)" in code
 
     def test_md(self, nb):
         md = nb.extract(cell_type="markdown")

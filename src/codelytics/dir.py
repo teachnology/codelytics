@@ -1,6 +1,8 @@
 import pathlib
 import subprocess
 
+from .notebook import Notebook
+
 
 class Dir:
     """
@@ -163,8 +165,8 @@ class Dir:
         ----------
         content_type : str
             Type of content to extract. Options are:
-            - 'code': Extract Python code from .py files and code cells from .ipynb files
-            - 'markdown': Extract content from .md files and markdown cells from .ipynb files
+            - 'code': Extract code from .py files and code cells from .ipynb files
+            - 'markdown': Extract from .md files and markdown cells from .ipynb files
 
         Returns
         -------
@@ -189,8 +191,6 @@ class Dir:
 
                     elif file_path.suffix == ".ipynb":
                         try:
-                            from .notebook import Notebook  # Assuming relative import
-
                             nb = Notebook(file_path)
                             code_content = nb.extract("code")
                             if code_content.strip():
@@ -208,10 +208,11 @@ class Dir:
 
                     elif file_path.suffix == ".ipynb":
                         try:
-                            from .notebook import Notebook  # Assuming relative import
-
                             nb = Notebook(file_path)
                             markdown_content = nb.extract("markdown")
+
+                            print(markdown_content)
+
                             if markdown_content.strip():
                                 content_parts.append(markdown_content)
                         except Exception:

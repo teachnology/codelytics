@@ -252,39 +252,47 @@ class Py:
         except Exception:
             return 0 if total else 0.0
 
-    def cogc_stats(self, use_median=False):
+    def cogc(self, total=False, use_median=False):
         """
-        Return the mean or median cognitive complexity per function.
+        Return cognitive complexity statistics.
 
         Cognitive complexity measures how difficult code is to understand by humans,
-        focusing on readability rather than testability. Includes all functions
-        and methods (regular functions, class methods, static methods, etc.).
+        focusing on readability rather than testability. Can return total complexity
+        for entire source or mean/median complexity per function.
 
         Based on complexipy.
 
         Parameters
         ----------
+        total : bool, optional
+            If True, returns total cognitive complexity for entire source.
+            If False, returns mean or median complexity per function (default).
         use_median : bool, optional
-            If True, returns median cognitive complexity per function.
-            If False, returns mean cognitive complexity per function (default).
+            If True and total=False, returns median cognitive complexity per function.
+            If False and total=False, returns mean cognitive complexity per function.
+            Ignored when total=True.
 
         Returns
         -------
-        float
-            Mean or median cognitive complexity per function.
-            Returns 0.0 if no functions are found or if complexipy is not available.
+        int or float
+            If total=True: Total cognitive complexity (int).
+            If total=False: Mean or median complexity per function (float).
+            Returns 0 or 0.0 if no functions found or if complexipy is not available.
         """
         try:
             result = complexipy.code_complexity(self.content)
+
+            if total:
+                return result.complexity
 
             # Extract individual function complexities
             if hasattr(result, "functions") and result.functions:
                 complexities = [func.complexity for func in result.functions]
             else:
-                return 0.0
+                return 0
 
             if not complexities:
-                return 0.0
+                return 0
 
             if use_median:
                 return float(pd.Series(complexities).median())
@@ -292,21 +300,25 @@ class Py:
                 return float(pd.Series(complexities).mean())
 
         except Exception:
-            return 0.0
+            return 0 if total else 0.0
 
-    def halstead_stats(self, use_median=False):
+    def halstead(self, total=False, use_median=False):
         """
-        Return Halstead complexity metrics as a pandas Series.
+        Return Halstead complexity metrics.
 
         Halstead metrics measure program complexity based on the number of
-        operators and operands in the code. Can return mean or median values
-        per function.
+        operators and operands in the code. Can return total metrics for entire
+        source or mean/median values per function.
 
         Parameters
         ----------
+        total : bool, optional
+            If True, returns total Halstead metrics for entire source including
+            all code. If False, returns mean or median metrics per function (default).
         use_median : bool, optional
-            If True, returns median Halstead metrics per function.
-            If False, returns mean Halstead metrics per function (default).
+            If True and total=False, returns median Halstead metrics per function.
+            If False and total=False, returns mean Halstead metrics per function.
+            Ignored when total=True.
 
         Returns
         -------
@@ -318,6 +330,8 @@ class Py:
             - 'difficulty' (D): Program difficulty (n1/2 * N2/n2)
             - 'effort' (E): Program effort (D * V)
 
+            If total=True: Total metrics for entire source.
+            If total=False: Mean or median metrics per function.
             Returns Series with zeros if no functions found or parsing fails.
         """
         zero_series = pd.Series(
@@ -333,41 +347,54 @@ class Py:
         try:
             halstead_data = h_visit(self.content)
 
-            # Extract per-function metrics
-            if not halstead_data.functions:
-                return zero_series
-
-            # Get HalsteadReport objects for each function
-            function_reports = [report for _, report in halstead_data.functions]
-
-            # Extract metric arrays
-            vocabularies = [report.vocabulary for report in function_reports]
-            lengths = [report.length for report in function_reports]
-            volumes = [report.volume for report in function_reports]
-            difficulties = [report.difficulty for report in function_reports]
-            efforts = [report.effort for report in function_reports]
-
-            # Calculate mean or median using pandas
-            if use_median:
+            if total:
+                # Get total metrics for entire source
+                total_report = halstead_data.total
                 return pd.Series(
                     {
-                        "vocabulary": float(pd.Series(vocabularies).median()),
-                        "length": float(pd.Series(lengths).median()),
-                        "volume": float(pd.Series(volumes).median()),
-                        "difficulty": float(pd.Series(difficulties).median()),
-                        "effort": float(pd.Series(efforts).median()),
+                        "vocabulary": float(total_report.vocabulary),
+                        "length": float(total_report.length),
+                        "volume": float(total_report.volume),
+                        "difficulty": float(total_report.difficulty),
+                        "effort": float(total_report.effort),
                     }
                 )
             else:
-                return pd.Series(
-                    {
-                        "vocabulary": float(pd.Series(vocabularies).mean()),
-                        "length": float(pd.Series(lengths).mean()),
-                        "volume": float(pd.Series(volumes).mean()),
-                        "difficulty": float(pd.Series(difficulties).mean()),
-                        "effort": float(pd.Series(efforts).mean()),
-                    }
-                )
+                # Per-function statistics
+                if not halstead_data.functions:
+                    return zero_series
+
+                # Get HalsteadReport objects for each function
+                function_reports = [report for _, report in halstead_data.functions]
+
+                # Extract metric arrays
+                vocabularies = [report.vocabulary for report in function_reports]
+                lengths = [report.length for report in function_reports]
+                volumes = [report.volume for report in function_reports]
+                difficulties = [report.difficulty for report in function_reports]
+                efforts = [report.effort for report in function_reports]
+
+                # Calculate mean or median using pandas
+                if use_median:
+                    return pd.Series(
+                        {
+                            "vocabulary": float(pd.Series(vocabularies).median()),
+                            "length": float(pd.Series(lengths).median()),
+                            "volume": float(pd.Series(volumes).median()),
+                            "difficulty": float(pd.Series(difficulties).median()),
+                            "effort": float(pd.Series(efforts).median()),
+                        }
+                    )
+                else:
+                    return pd.Series(
+                        {
+                            "vocabulary": float(pd.Series(vocabularies).mean()),
+                            "length": float(pd.Series(lengths).mean()),
+                            "volume": float(pd.Series(volumes).mean()),
+                            "difficulty": float(pd.Series(difficulties).mean()),
+                            "effort": float(pd.Series(efforts).mean()),
+                        }
+                    )
 
         except Exception:
             return zero_series

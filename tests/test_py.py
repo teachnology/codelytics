@@ -301,30 +301,41 @@ class TestCyclomaticComplexity:
 
 class TestCognitiveComplexity:
     def test_simple(self, simple):
-        assert simple.cogc_stats(use_median=False) == 0
-        assert simple.cogc_stats(use_median=True) == 0
-
-    def test_complex(self, complex):
-        assert complex.cogc_stats(use_median=False) == (1 + 0 + 1) / 3
-        assert complex.cogc_stats(use_median=True) == 1
+        assert simple.cogc(total=False, use_median=False) == 0
+        assert simple.cogc(total=True) == 0
 
     def test_cogc(self, cogc):
-        assert cogc.cogc_stats(use_median=False) == (0 + 6 + 0) / 3
-        assert cogc.cogc_stats(use_median=True) == 0
+        assert cogc.cogc(total=True) == 6
+
+    def test_cogc_per_function(self, cogc):
+        assert cogc.cogc(total=False, use_median=False) == (0 + 6 + 0) / 3
+        assert cogc.cogc(total=False, use_median=True) == 0
 
     def test_empty(self, empty):
-        assert empty.cogc_stats() == 0
+        assert empty.cogc(total=False) == 0
+        assert empty.cogc(total=True) == 0
 
     def test_comment_only(self, comment_only):
-        assert comment_only.cogc_stats() == 0
+        assert comment_only.cogc(total=False) == 0
+        assert comment_only.cogc(total=True) == 0
 
 
 class TestHalsteadMetrics:
     def test_simple(self, simple):
-        assert simple.halstead_stats().mean() == 0.0
+        assert simple.halstead(total=False).mean() == 0.0
+
+    def test_halstead(self, halstead):
+        metrics = halstead.halstead(total=True)
+        assert metrics.mean() > 0.0
+
+        vocabulary = (3 + 3 + 5 + 2)  # not sure why 2 for x + y
+        assert np.isclose(metrics.loc["vocabulary"], vocabulary)
+
+        length = (3 + 3 + 6 + 3)
+        assert np.isclose(metrics.loc["length"], length)
 
     def test_halstead_mean(self, halstead):
-        metrics = halstead.halstead_stats(use_median=False)
+        metrics = halstead.halstead(total=False, use_median=False)
         assert metrics.mean() > 0.0
 
         vocabulary = (3 + 3 + 5) / 3
@@ -342,7 +353,7 @@ class TestHalsteadMetrics:
         assert metrics.loc["effort"] >= 0
 
     def test_halstead_median(self, halstead):
-        metrics = halstead.halstead_stats(use_median=True)
+        metrics = halstead.halstead(total=False, use_median=True)
         assert metrics.mean() > 0.0
 
         vocabulary = np.median([3, 3, 5])
@@ -360,10 +371,10 @@ class TestHalsteadMetrics:
         assert metrics.loc["effort"] >= 0
 
     def test_empty(self, empty):
-        assert empty.halstead_stats().mean() == 0.0
+        assert empty.halstead(total=False).mean() == 0.0
 
     def test_comment_only(self, comment_only):
-        assert comment_only.halstead_stats().mean() == 0.0
+        assert comment_only.halstead(total=False).mean() == 0.0
 
 
 class TestUserDefinedNames:

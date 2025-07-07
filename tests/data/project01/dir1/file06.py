@@ -12,3 +12,8 @@ class Calculator:
         if y != 0:
             return x / y
         return None
+
+
+x = 3
+y = 5
+print(x + y)

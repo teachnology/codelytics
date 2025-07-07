@@ -5,5 +5,15 @@ from .names import Names
 from .pdf import PDF
 from .py import Py
 from .text_analysis import TextAnalysis
+from .notebook import Notebook
 
-__all__ = ["PDF", "Comments", "Dir", "Docstrings", "Names", "Py", "TextAnalysis"]
+__all__ = [
+    "PDF",
+    "Comments",
+    "Dir",
+    "Docstrings",
+    "Names",
+    "Py",
+    "TextAnalysis",
+    "Notebook",
+]

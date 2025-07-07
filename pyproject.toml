@@ -7,6 +7,7 @@ authors = [{ name = "marijanbeg", email = "m.beg@imperial.ac.uk" }]
 requires-python = ">=3.13"
 dependencies = [
     "complexipy>=3.0.0",
+    "nbformat>=5.10.4",
     "pandas>=2.3.0",
     "pymupdf>=1.26.1",
     "pyspellchecker>=0.8.3",

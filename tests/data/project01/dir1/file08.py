@@ -19,11 +19,6 @@ def function_no_blank_line():
     pass
 
 
-def function_too_long_first_line():
-    """Calculate the sum of two numbers and return the result after performing validation."""
-    pass
-
-
 def function_inconsistent_indentation():
     """Calculate the sum of two numbers.
 

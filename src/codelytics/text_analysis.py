@@ -1,6 +1,8 @@
-import pandas as pd
 import re
+
+import pandas as pd
 from spellchecker import SpellChecker
+
 
 class TextAnalysis:
     """
@@ -171,7 +173,7 @@ class TextAnalysis:
                     # Remove punctuation and convert to lowercase
                     cleaned_word = re.sub(r"[^\w]", "", word.lower())
 
-                    # Only include words that are likely actual words (not code, numbers, etc.)
+                    # Only include words that are likely actual words.
                     if (
                         cleaned_word
                         and cleaned_word.isalpha()

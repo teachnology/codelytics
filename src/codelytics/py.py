@@ -1,7 +1,7 @@
 import ast
+import io
 import pathlib
 import tokenize
-import io
 
 import complexipy
 import pandas as pd
@@ -589,7 +589,7 @@ class Py:
             # Walk through all nodes to find classes and functions
             for node in ast.walk(tree):
                 if isinstance(
-                    node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                    node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
                 ):
                     docstring = extract_docstring(node)
                     if docstring:

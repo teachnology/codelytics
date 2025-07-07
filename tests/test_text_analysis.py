@@ -1,8 +1,7 @@
-import pytest
-import pandas as pd
-from codelytics import Comments, Docstrings, TextAnalysis
 import numpy as np
-import pathlib
+import pytest
+
+from codelytics import Comments, Docstrings, TextAnalysis
 
 
 @pytest.fixture

@@ -77,7 +77,7 @@ class TextAnalysis:
             Total, mean, or median character count.
         """
         char_counts = [len(text) for text in self.texts]
-        return self._get_stat(char_counts, total, use_median)
+        return self._stat(char_counts, total, use_median)
 
     def n_non_ascii(self, total=False, use_median=False):
         """
@@ -109,7 +109,7 @@ class TextAnalysis:
         Return sentence count statistics.
 
         Counts complete sentences that begin with an uppercase letter
-        and end with a full stop.
+        and end with sentence-ending punctuation (., !, ?).
 
         Parameters
         ----------
@@ -127,7 +127,7 @@ class TextAnalysis:
             Total, mean, or median sentence count.
         """
         sentence_counts = []
-        sentence_pattern = re.compile(r"[A-Z][^.]*\.")
+        sentence_pattern = re.compile(r"[A-Z][^.!?]*[.!?]")
 
         for text in self.texts:
             sentences = sentence_pattern.findall(text)

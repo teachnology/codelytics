@@ -8,6 +8,7 @@ requires-python = ">=3.13"
 dependencies = [
     "complexipy>=3.0.0",
     "pandas>=2.3.0",
+    "pydocstyle>=6.3.0",
     "pymupdf>=1.26.1",
     "radon>=6.0.1",
 ]
@@ -85,5 +86,5 @@ convention = "numpy"
 [tool.coverage.run]
 omit = ["tests/*.py"]
 
-[tool.pytest.ini_options]
-addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term"
+# [tool.pytest.ini_options]
+# addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term"

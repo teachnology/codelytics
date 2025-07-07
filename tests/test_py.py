@@ -328,10 +328,10 @@ class TestHalsteadMetrics:
         metrics = halstead.halstead(total=True)
         assert metrics.mean() > 0.0
 
-        vocabulary = (3 + 3 + 5 + 2)  # not sure why 2 for x + y
+        vocabulary = 3 + 3 + 5 + 2  # not sure why 2 for x + y
         assert np.isclose(metrics.loc["vocabulary"], vocabulary)
 
-        length = (3 + 3 + 6 + 3)
+        length = 3 + 3 + 6 + 3
         assert np.isclose(metrics.loc["length"], length)
 
     def test_halstead_mean(self, halstead):

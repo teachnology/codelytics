@@ -206,41 +206,51 @@ class Py:
         except Exception:
             return 0
 
-    def cc_stats(self, use_median=False):
+    def cc(self, total=False, use_median=False):
         """
-        Return the mean or median cyclomatic complexity per function.
+        Return cyclomatic complexity statistics.
 
-        Calculates complexity statistics for individual functions and methods,
-        including class methods, static methods, and regular functions.
+        Calculate either total cyclomatic complexity for the entire source or
+        mean/median complexity per function.
 
         Parameters
         ----------
+        total : bool, optional
+            If True, returns total cyclomatic complexity for entire source.
+            If False, returns mean or median complexity per function (default).
         use_median : bool, optional
-            If True, returns median complexity per function.
-            If False, returns mean complexity per function (default).
+            If True and total=False, returns median complexity per function.
+            If False and total=False, returns mean complexity per function.
+            Ignored when total=True.
 
         Returns
         -------
-        float
-            Mean or median cyclomatic complexity per function.
-            Returns 0.0 if no functions are found.
+        int or float
+            If total=True: Total cyclomatic complexity (int).
+            If total=False: Mean or median complexity per function (float).
+            Returns 0 or 0.0 if parsing fails or no functions found.
         """
         try:
-            complexities = [
-                item.complexity
-                for item in cc_visit(self.content)
-                if isinstance(item, Function)
-            ]
+            results = cc_visit(self.content)
 
-            if not complexities:
-                return 0.0
-
-            if use_median:
-                return float(pd.Series(complexities).median())
+            if total:
+                return sum(item.complexity for item in results)
             else:
-                return float(pd.Series(complexities).mean())
+                # Per-function statistics
+                complexities = [
+                    item.complexity for item in results if isinstance(item, Function)
+                ]
+
+                if not complexities:
+                    return 0.0
+
+                if use_median:
+                    return float(pd.Series(complexities).median())
+                else:
+                    return float(pd.Series(complexities).mean())
+
         except Exception:
-            return 0.0
+            return 0 if total else 0.0
 
     def cogc_stats(self, use_median=False):
         """

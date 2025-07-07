@@ -274,22 +274,29 @@ class TestNModules:
 
 class TestCyclomaticComplexity:
     def test_simple(self, simple):
-        assert simple.cc_stats(use_median=False) == 1
-        assert simple.cc_stats(use_median=True) == 1
+        assert simple.cc(total=True) == 1
 
-    def test_complex(self, complex):
-        assert complex.cc_stats(use_median=False) == (2 + 1 + 2) / 3
-        assert complex.cc_stats(use_median=True) == 2
+    def test_simple_per_function(self, simple):
+        assert simple.cc(total=False, use_median=False) == 1
+        assert simple.cc(total=False, use_median=True) == 1
 
     def test_cc(self, cc):
-        assert cc.cc_stats(use_median=False) == (1 + 3 + 1 + 2) / 4
-        assert cc.cc_stats(use_median=True) == 1.5
+        # Not sure why 10 and not 7.
+        # It could be due to Class definition,
+        # hidden constructor and module-level complexity.
+        assert cc.cc(total=True) == 10
+
+    def test_cc_per_function(self, cc):
+        assert cc.cc(total=False, use_median=False) == (1 + 3 + 1 + 2) / 4
+        assert cc.cc(total=False, use_median=True) == 1.5
 
     def test_empty(self, empty):
-        assert empty.cc_stats() == 0
+        assert empty.cc(total=False) == 0
+        assert empty.cc(total=True) == 0
 
     def test_comment_only(self, comment_only):
-        assert comment_only.cc_stats() == 0
+        assert comment_only.cc(total=False) == 0
+        assert comment_only.cc(total=True) == 0
 
 
 class TestCognitiveComplexity:

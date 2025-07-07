@@ -85,6 +85,5 @@ convention = "numpy"
 [tool.coverage.run]
 omit = ["tests/*.py"]
 
-# [tool.pytest.ini_options]
-# addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term"
-
+[tool.pytest.ini_options]
+addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term"

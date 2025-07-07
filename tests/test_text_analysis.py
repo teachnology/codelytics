@@ -61,7 +61,7 @@ def why_or_what():
             "Use binary search because linear search is too slow for large datasets",
             "Cache results to avoid expensive database queries",
             "TODO: Refactor this code due to performance issues",
-            "Hack: Using string comparison since datetime parsing fails on old versions",
+            "Hack: Using comparison since datetime parsing fails on old versions",
             "Important: Always validate input to prevent SQL injection attacks",
             "We need this workaround for IE compatibility",
             "This optimization improves response time by 50%",

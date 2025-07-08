@@ -2,6 +2,8 @@ import pathlib
 import subprocess
 
 from .notebook import Notebook
+from .py import Py
+from .text_analysis import TextAnalysis
 
 
 class Dir:
@@ -165,57 +167,40 @@ class Dir:
 
         Returns
         -------
-        str
-            All content of the specified type merged together as a single string.
+        Py or Markdown object
             Each file's content is separated by double newlines.
             Returns empty string if no files found or content type not recognized.
         """
         if content_type not in ["code", "markdown"]:
-            return ""
+            raise ValueError("Invalid content_type. Use 'code' or 'markdown'.")
 
         content_parts = []
 
         for file_path in self:
             try:
                 if content_type == "code":
-                    # Extract Python code
                     if file_path.suffix == ".py":
                         content = file_path.read_text(encoding="utf-8")
-                        if content.strip():
-                            content_parts.append(content)
 
                     elif file_path.suffix == ".ipynb":
-                        try:
-                            nb = Notebook(file_path)
-                            code_content = nb.extract("code")
-                            if code_content.strip():
-                                content_parts.append(code_content)
-                        except Exception:
-                            # Skip notebooks that can't be parsed
-                            continue
+                        nb = Notebook(file_path)
+                        content = nb.extract("code")
 
                 elif content_type == "markdown":
-                    # Extract Markdown content
                     if file_path.suffix == ".md":
                         content = file_path.read_text(encoding="utf-8")
-                        if content.strip():
-                            content_parts.append(content)
 
                     elif file_path.suffix == ".ipynb":
-                        try:
-                            nb = Notebook(file_path)
-                            markdown_content = nb.extract("markdown")
+                        nb = Notebook(file_path)
+                        content = nb.extract("markdown")
 
-                            print(markdown_content)
+                if content.strip():
+                    content_parts.append(content)
 
-                            if markdown_content.strip():
-                                content_parts.append(markdown_content)
-                        except Exception:
-                            # Skip notebooks that can't be parsed
-                            continue
-
-            except (UnicodeDecodeError, PermissionError):
-                # Skip files that can't be read
+            except Exception:
                 continue
 
-        return "\n\n".join(content_parts)
+        if content_type == "code":
+            return Py("\n\n".join(content_parts))
+        else:
+            return TextAnalysis(["\n\n".join(content_parts)])

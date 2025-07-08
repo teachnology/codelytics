@@ -150,3 +150,7 @@ class TestExtract:
 
         assert "This is a readme file." in md.texts[0]
         assert "Let's analyze the data:" in md.texts[0]
+
+    def test_extract_invalid_content_type(self, dir):
+        with pytest.raises(ValueError):
+            dir.extract("invalid_type")

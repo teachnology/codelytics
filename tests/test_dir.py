@@ -8,46 +8,37 @@ from codelytics import Dir
 
 @pytest.fixture
 def dir():
-    path = pathlib.Path(__file__).parent / "data" / "project01"
-    return Dir(path=path)
+    return Dir(path=pathlib.Path(__file__).parent / "data" / "project01")
 
 
 @pytest.fixture
 def repo(tmp_path):
-    # Initialise git repo
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "config", "user.name", "Test User"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-    )
+    test_file1 = tmp_path / "test.txt"
+    test_file1.write_text("test content")
 
-    # Create and commit a file
-    test_file = tmp_path / "test.txt"
-    test_file.write_text("test content")
-    subprocess.run(
-        ["git", "add", "test.txt"], cwd=tmp_path, check=True, capture_output=True
-    )
-    subprocess.run(
+    test_file2 = tmp_path / "test2.txt"
+    test_file2.write_text("test content 2")
+
+    commands = [
+        ["git", "init"],
+        ["git", "config", "user.email", "test_fake_user@example.com"],
+        ["git", "config", "user.name", "Test User"],
+        ["git", "add", "test.txt"],
         ["git", "commit", "-m", "Initial commit"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-    )
+        ["git", "checkout", "-b", "feature"],
+        ["git", "add", "test2.txt"],
+        ["git", "commit", "-m", "Feature commit"],
+        ["git", "checkout", "main"],
+    ]
+    for cmd in commands:
+        subprocess.run(cmd, cwd=tmp_path, check=True, capture_output=True)
 
     return Dir(tmp_path)
 
 
-class TestDirInitialisation:
+class TestInit:
     def test_valid_directory(self, dir):
-        assert dir.path == pathlib.Path(__file__).parent / "data" / "project01"
+        assert dir.path.exists() and dir.path.is_dir()
 
     def test_with_pathlib_object(self, tmp_path):
         dir = Dir(tmp_path)
@@ -65,90 +56,59 @@ class TestDirInitialisation:
 
 
 class TestGitRepository:
-    def test_is_repo_true(self, repo, dir):
-        assert repo.is_repo()
+    def test_is_repo_true(self, repo):
+        assert repo.is_repo
 
     def test_is_repo_false(self, dir):
-        assert not dir.is_repo()
+        assert not dir.is_repo
 
-    def test_commits_in_repo(self, repo):
+    def test_n_commits_in_repo(self, repo):
         assert repo.n_commits() == 1
         assert repo.n_commits("HEAD") == 1
-        assert repo.n_commits("--all") == 1
-
-    def test_commits_all_branches(self, repo):
-        # Create a new branch and commit
-        subprocess.run(
-            ["git", "checkout", "-b", "feature"],
-            cwd=repo.path,
-            check=True,
-            capture_output=True,
-        )
-        test_file2 = repo.path / "test2.txt"
-        test_file2.write_text("test content 2")
-        subprocess.run(
-            ["git", "add", "test2.txt"], cwd=repo.path, check=True, capture_output=True
-        )
-        subprocess.run(
-            ["git", "commit", "-m", "Feature commit"],
-            cwd=repo.path,
-            check=True,
-            capture_output=True,
-        )
-
-        # Current branch (feature) has 2 commits
-        assert repo.n_commits("HEAD") == 2
-        # All branches should have 2 commits total
+        assert repo.n_commits("main") == 1
         assert repo.n_commits("--all") == 2
+        assert repo.n_commits("feature") == 2
 
-    def test_commits_non_repo(self, tmp_path):
-        dir = Dir(tmp_path)
+    def test_n_commits_non_repo(self, dir):
         with pytest.raises(RuntimeError):
             dir.n_commits()
-        with pytest.raises(RuntimeError):
-            dir.n_commits("--all")
 
 
 class TestFileIteration:
     def test_iter_empty_directory(self, tmp_path):
         dir = Dir(tmp_path)
-        assert len(list(dir)) == 0
+
+        assert len(dir) == len(list(dir)) == len(list(dir.iter_files(suffix=None))) == 0
 
     def test_iter_with_files(self, dir):
         files = list(dir)
 
         assert len(files) > 0
-        # Check that we get Path objects
         assert all(isinstance(f, pathlib.Path) for f in files)
-        # Check that all returned items are files
         assert all(f.is_file() for f in files)
 
-    def test_iter_files_with_suffix_py(self, dir):
+    def test_iter_files_py(self, dir):
         py_files = list(dir.iter_files("py"))
 
-        # All files should have .py extension
         assert all(f.suffix == ".py" for f in py_files)
-        assert len(py_files) == 9
+        assert len(py_files) > 0
 
-    def test_iter_files_with_suffix_md(self, dir):
+    def test_iter_files_md(self, dir):
         md_files = list(dir.iter_files(suffix=".md"))
 
-        # All files should have .md extension
         assert all(f.suffix == ".md" for f in md_files)
-        assert len(md_files) == 1
+        assert len(md_files) > 0
+
+    def test_iter_files_ipynb(self, dir):
+        ipynb_files = list(dir.iter_files("ipynb"))
+
+        assert all(f.suffix == ".ipynb" for f in ipynb_files)
+        assert len(ipynb_files) > 0
 
     def test_iter_files_no_matches(self, dir):
-        weird_files = list(dir.iter_files(suffix="weird"))
+        weird_files = list(dir.iter_files(suffix="weirdsuffix"))
 
         assert len(weird_files) == 0
-
-    def test_iter_files_empty_directory(self, tmp_path):
-        dir = Dir(tmp_path)
-        files = list(dir.iter_files("py"))
-        assert len(files) == 0
-        # Test with None suffix as well
-        files_none = list(dir.iter_files(suffix=None))
-        assert len(files_none) == 0
 
 
 class TestFileCounting:

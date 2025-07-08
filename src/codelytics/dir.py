@@ -25,21 +25,6 @@ class Dir:
     """
 
     def __init__(self, path):
-        """
-        Initialise Dir object with a directory path.
-
-        Parameters
-        ----------
-        path : str or pathlib.Path
-            Path to the directory to analyse
-
-        Raises
-        ------
-        FileNotFoundError
-            If the specified directory does not exist
-        NotADirectoryError
-            If the specified path is not a directory
-        """
         self.path = pathlib.Path(path)
 
         if not self.path.exists():
@@ -48,6 +33,7 @@ class Dir:
         if not self.path.is_dir():
             raise NotADirectoryError(f"Path is not a directory: {self.path}")
 
+    @property
     def is_repo(self):
         """
         Check if the directory is a git repository.
@@ -68,7 +54,7 @@ class Dir:
         ----------
         ref : str, default 'HEAD'
             Git reference to count commits from. Can be 'HEAD' for current
-            branch or '--all' for all branches.
+            branch, '--all' for all branches, or any specific branch name.
 
         Returns
         -------
@@ -80,7 +66,7 @@ class Dir:
         RuntimeError
             If the directory is not a git repository or git command fails
         """
-        if not self.is_repo():
+        if not self.is_repo:
             raise RuntimeError("Directory is not a git repository")
 
         try:
@@ -95,7 +81,7 @@ class Dir:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to get commit count: {e}")
         except FileNotFoundError:
-            raise RuntimeError("Git command not found")
+            raise RuntimeError("Git command not found.")
 
     def __iter__(self):
         """
@@ -110,6 +96,17 @@ class Dir:
             if file_path.is_file():
                 yield file_path
 
+    def __len__(self):
+        """
+        Get the total number of files in the directory.
+
+        Returns
+        -------
+        int
+            Total number of files found recursively in the directory
+        """
+        return sum(1 for _ in self)
+
     def iter_files(self, suffix=None):
         """
         Iterate recursively through files with optional suffix filter.
@@ -117,8 +114,8 @@ class Dir:
         Parameters
         ----------
         suffix : str, optional
-            File extension to filter by (without the dot). If None, behaves
-            the same as __iter__ and yields all files.
+            File extension to filter by (with or without the dot). If None, behaves the
+            same as __iter__ and yields all files.
 
         Yields
         ------
@@ -126,10 +123,8 @@ class Dir:
             Path object for each file found recursively, optionally filtered by suffix
         """
         if suffix is None:
-            # Same behaviour as __iter__
             yield from self
         else:
-            # Ensure suffix starts with dot
             if not suffix.startswith("."):
                 suffix = "." + suffix
 
@@ -144,7 +139,7 @@ class Dir:
         Parameters
         ----------
         suffix : str, optional
-            File extension to filter by (without the dot).
+            File extension to filter by (with or without the dot).
             If None, counts all files.
 
         Returns
@@ -152,7 +147,7 @@ class Dir:
         int
             Number of files matching the criteria
         """
-        return sum(1 for _ in self.iter_files(suffix))
+        return sum(1 for _ in self.iter_files(suffix=suffix))
 
     def extract(self, content_type):
         """

@@ -38,6 +38,6 @@ def process_data(data):  # 'process_data', 'data' included
 counter = 0  # 'counter' included
 total_sum = sum([1, 2, 3])  # 'total_sum' included
 
-# Walrus operator (Python 3.8+)
+# Walrus operator
 if (n := 6) > 5:  # 'n' included (named expression)
     print(f"Length: {n}")

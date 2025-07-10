@@ -9,7 +9,7 @@ import pandas as pd
 import radon
 import radon.complexity
 import radon.visitors
-from radon.metrics import h_visit
+import radon.metrics
 
 
 class Py:
@@ -96,7 +96,7 @@ class Py:
         int
             Total number of logical lines of code, excluding docstrings.
         """
-        return self.radon_analysis.lloc - len(self.docstrings())
+        return self.radon_analysis.lloc - len(self.docstrings)
 
     @property
     def n_char(self):
@@ -225,12 +225,9 @@ class Py:
         except Exception:
             return 0
 
-    def cc(self, total=False, use_median=False):
+    def mccabe(self, total=False, use_median=False):
         """
-        Return cyclomatic complexity statistics.
-
-        Calculate either total cyclomatic complexity for the entire source or
-        mean/median complexity per function.
+        Return cyclomatic complexity statistics using McCabe algorithm.
 
         Parameters
         ----------
@@ -247,31 +244,65 @@ class Py:
         int or float
             If total=True: Total cyclomatic complexity (int).
             If total=False: Mean or median complexity per function (float).
-            Returns 0 or 0.0 if parsing fails or no functions found.
+            Returns 0 if parsing fails or no functions found.
         """
         try:
-            results = cc_visit(self.content)
+            if self._ast_tree is None:
+                return 0
+
+            def count_complexity_nodes(node):
+                """Count nodes that contribute to cyclomatic complexity."""
+                complexity = 0
+                for child in ast.walk(node):
+                    if isinstance(
+                        child,
+                        (
+                            ast.If
+                            | ast.While
+                            | ast.For
+                            | ast.AsyncFor
+                            | ast.Try
+                            | ast.ExceptHandler
+                            | ast.With
+                            | ast.AsyncWith
+                            | ast.BoolOp  # and, or operators
+                        ),
+                    ):
+                        complexity += 1
+                    elif isinstance(child, ast.comprehension):
+                        # List/dict/set comprehensions with conditions
+                        complexity += len(child.ifs)
+                return complexity
 
             if total:
-                return sum(item.complexity for item in results)
+                # Count all complexity in the module + base complexity of 1.
+                return 1 + count_complexity_nodes(self._ast_tree)
             else:
                 # Per-function statistics
-                complexities = [
-                    item.complexity for item in results if isinstance(item, Function)
+                function_nodes = [
+                    node
+                    for node in ast.walk(self._ast_tree)
+                    if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef))
                 ]
 
-                if not complexities:
-                    return 0.0
+                if not function_nodes:
+                    return 0
+
+                complexities = []
+                for func_node in function_nodes:
+                    # Each function starts with complexity 1, plus decision points
+                    func_complexity = 1 + count_complexity_nodes(func_node)
+                    complexities.append(func_complexity)
 
                 if use_median:
-                    return float(pd.Series(complexities).median())
+                    return pd.Series(complexities).median()
                 else:
-                    return float(pd.Series(complexities).mean())
+                    return pd.Series(complexities).mean()
 
         except Exception:
-            return 0 if total else 0.0
+            return 0
 
-    def cogc(self, total=False, use_median=False):
+    def cognitive_complexity(self, total=False, use_median=False):
         """
         Return cognitive complexity statistics.
 
@@ -296,7 +327,7 @@ class Py:
         int or float
             If total=True: Total cognitive complexity (int).
             If total=False: Mean or median complexity per function (float).
-            Returns 0 or 0.0 if no functions found or if complexipy is not available.
+            Returns 0 if no functions found or if complexipy is not available.
         """
         try:
             result = complexipy.code_complexity(self.content)
@@ -314,12 +345,12 @@ class Py:
                 return 0
 
             if use_median:
-                return float(pd.Series(complexities).median())
+                return pd.Series(complexities).median()
             else:
-                return float(pd.Series(complexities).mean())
+                return pd.Series(complexities).mean()
 
         except Exception:
-            return 0 if total else 0.0
+            return 0
 
     def halstead(self, total=False, use_median=False):
         """
@@ -364,7 +395,7 @@ class Py:
         )
 
         try:
-            halstead_data = h_visit(self.content)
+            halstead_data = radon.metrics.h_visit(self.content)
 
             if total:
                 # Get total metrics for entire source
@@ -418,6 +449,7 @@ class Py:
         except Exception:
             return zero_series
 
+    @property
     def user_defined_names(self):
         """
         Return all user-defined names in the source code.
@@ -432,6 +464,8 @@ class Py:
             Sorted list of unique user-defined names found in the source code.
             Returns empty list if parsing fails.
         """
+        from codelytics import Names  # noqa: PLC0415
+
         try:
             tree = ast.parse(self.content)
             user_names = set()
@@ -532,15 +566,18 @@ class Py:
                     for name in node.names:
                         user_names.add(name)
 
-            return {
-                name
-                for name in user_names - {"self", "cls"}
-                if not name.startswith("__") and not name.endswith("__")
-            }  # Exclude common names
+            return Names(
+                {
+                    name
+                    for name in user_names - {"self", "cls"}
+                    if not name.startswith("__") and not name.endswith("__")
+                }
+            )  # Exclude common names
 
         except Exception:
-            return set()
+            return Names([])  # Return empty Names object on error
 
+    @property
     def comments(self):
         """
         Return all comments found in the source code.
@@ -554,6 +591,8 @@ class Py:
             List of comment strings with leading # and whitespace stripped.
             Returns empty list if parsing fails or no comments found.
         """
+        from codelytics import TextAnalysis  # noqa: PLC0415
+
         try:
             comments = []
             tokens = tokenize.generate_tokens(io.StringIO(self.content).readline)
@@ -561,15 +600,15 @@ class Py:
             for token in tokens:
                 if token.type == tokenize.COMMENT:
                     # Strip the # and any leading/trailing whitespace
-                    comment_text = token.string.lstrip("#").strip()
-                    if comment_text:  # Only add non-empty comments
+                    if comment_text := token.string.lstrip("#").strip():
                         comments.append(comment_text)
 
-            return comments
+            return TextAnalysis(comments)
 
         except Exception:
-            return []
+            return TextAnalysis([])
 
+    @property
     def docstrings(self):
         """
         Return all docstrings found in the source code.
@@ -583,8 +622,9 @@ class Py:
             List of docstring contents with leading/trailing whitespace stripped.
             Returns empty list if parsing fails or no docstrings found.
         """
+        from codelytics import TextAnalysis  # noqa: PLC0415
+
         try:
-            tree = ast.parse(self.content)
             docstrings = []
 
             def extract_docstring(node):
@@ -599,12 +639,12 @@ class Py:
                 return None
 
             # Module docstring
-            module_docstring = extract_docstring(tree)
+            module_docstring = extract_docstring(self._ast_tree)
             if module_docstring:
                 docstrings.append(module_docstring)
 
             # Walk through all nodes to find classes and functions
-            for node in ast.walk(tree):
+            for node in ast.walk(self._ast_tree):
                 if isinstance(
                     node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
                 ):
@@ -612,7 +652,7 @@ class Py:
                     if docstring:
                         docstrings.append(docstring)
 
-            return docstrings
+            return TextAnalysis(docstrings)
 
         except Exception:
-            return []
+            return TextAnalysis([])

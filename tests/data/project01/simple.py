@@ -19,7 +19,7 @@ def hello(name):
 
 
 if __name__ == "__main__":
-    print(hello("World"))  # inline comment
+    print(hello("世界"))  # inline comment
 
 
 # Footer comment 1

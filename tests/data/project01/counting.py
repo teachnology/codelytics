@@ -49,13 +49,8 @@ class MathProcessor:
     def square_root(self, number):
         """Calculate square root with specified precision."""
         from math import sqrt  # noqa: PLC0415
-        result = round(sqrt(number), self.precision)
-        self.results.append(result)
-        return result
 
-    def logarithm(self, number, base=math.e):
-        """Calculate logarithm with specified base."""
-        result = round(math.log(number, base), self.precision)
+        result = round(sqrt(number), self.precision)
         self.results.append(result)
         return result
 
@@ -66,3 +61,22 @@ class MathProcessor:
     def get_results_array(self):
         """Return results as numpy array."""
         return array(self.results)
+
+    def logarithm(self, number, base=math.e):
+        """Calculate logarithm with specified base.
+
+        Parameters
+        ----------
+        number : float
+            The number to calculate the logarithm for.
+        base : float, optional
+            The base of the logarithm (default is e).
+
+        Returns
+        -------
+        float
+            The logarithm of the number to the specified base.
+        """
+        result = round(math.log(number, base), self.precision)
+        self.results.append(result)
+        return result

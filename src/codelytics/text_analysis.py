@@ -25,6 +25,10 @@ class TextAnalysis:
         """Return the number of text items."""
         return len(self.texts)
 
+    def __getitem__(self, index):
+        """Return text at the specified index."""
+        return self.texts[index]
+
     def _stat(self, values, total=False, use_median=False):
         """Calculate statistics from values."""
         if not values:

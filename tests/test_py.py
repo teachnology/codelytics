@@ -5,52 +5,47 @@ import pytest
 
 from codelytics import Py
 
+PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
+
 
 @pytest.fixture
 def simple():
-    return Py(pathlib.Path(__file__).parent / "data" / "project01" / "file01.py")
+    return Py(PROJECT_DIR / "simple.py")
+
+
+@pytest.fixture
+def counting():
+    return Py(PROJECT_DIR / "counting.py")
+
+
+@pytest.fixture
+def empty():
+    return Py("")
 
 
 @pytest.fixture
 def complex():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file02.py"
-    )
-
-
-@pytest.fixture
-def imports():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file03.py"
-    )
+    return Py(PROJECT_DIR / "dir1" / "file02.py")
 
 
 @pytest.fixture
 def cc():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file04.py"
-    )
+    return Py(PROJECT_DIR / "dir1" / "file04.py")
 
 
 @pytest.fixture
 def cogc():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file05.py"
-    )
+    return Py(PROJECT_DIR / "dir1" / "file05.py")
 
 
 @pytest.fixture
 def halstead():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file06.py"
-    )
+    return Py(PROJECT_DIR / "dir1" / "file06.py")
 
 
 @pytest.fixture
 def user_defined_names():
-    return Py(
-        pathlib.Path(__file__).parent / "data" / "project01" / "dir1" / "file07.py"
-    )
+    return Py(PROJECT_DIR / "dir1" / "file07.py")
 
 
 @pytest.fixture
@@ -109,11 +104,6 @@ def whitespace_only():
 
 
 @pytest.fixture
-def empty():
-    return Py("")
-
-
-@pytest.fixture
 def syntax_error():
     code = "def invalid syntax here"
     return Py(code)
@@ -134,129 +124,128 @@ class TestInitialization:
             Py(123)
 
 
-class TestLoc:
-    def test_simple(self, simple):
-        assert simple.loc() == 5
+class TestRadonAnalysis:
+    def test_object(self, simple):
+        analysis = simple.radon_analysis
+        assert isinstance(analysis, tuple) and hasattr(analysis, "_fields")
 
-    def test_complex(self, complex):
-        assert complex.loc() == 33
+    def test_loc(self, simple):
+        assert simple.radon_analysis.loc == 25  # physical lines of code
+
+    def test_lloc(self, simple):
+        # Multiline docstrings count as one line.
+        # Statements that span multiple lines count as one line.
+        assert simple.radon_analysis.lloc == 5
+
+    def test_sloc(self, simple):
+        # Comments and docstrings are excluded.
+        # Multiline statements are counted as multiple lines.
+        assert simple.radon_analysis.sloc == 7
+
+    def test_comments(self, simple):
+        # Block and inline comments are counted.
+        assert simple.radon_analysis.comments == 5
+
+    def test_blank(self, simple):
+        # Blank lines inside docstrings are counted.
+        assert simple.radon_analysis.blank == 8
+
+    def test_multi(self, simple):
+        # Number of lines in docstrings
+        # Blank lines inside docstrings are excluded.
+        # """ is counted if it is on a separate line.
+        assert simple.radon_analysis.multi == 7
+
+    def test_radon_analysis_empty(self, empty):
+        analysis = empty.radon_analysis
+        assert all(getattr(analysis, attr) == 0 for attr in analysis._fields)
+
+    def test_comparisons(self, simple):
+        assert simple.lloc < simple.radon_analysis.lloc
+        assert simple.radon_analysis.lloc < simple.radon_analysis.sloc
+        assert simple.radon_analysis.sloc < simple.radon_analysis.loc
+
+
+class TestLLOC:
+    def test_simple(self, simple):
+        assert simple.lloc == 4
 
     def test_empty(self, empty):
-        assert empty.loc() == 0
-
-
-class TestLloc:
-    def test_simple(self, simple):
-        assert simple.lloc() == 2
-
-    def test_complex(self, complex):
-        assert complex.lloc() == 16  # includes docstings but not comments
-        assert complex.lloc() < complex.loc()
-
-    def test_empty(self, empty):
-        assert empty.lloc() == 0
-
-
-class TestSloc:
-    def test_simple(self, simple):
-        assert simple.sloc() == 2
-
-    def test_complex(self, complex):
-        # excludes docstrings and comments but includes multiline statements.
-        assert complex.sloc() == 18
-        assert complex.sloc() < complex.loc()
-
-    def test_comment_only(self, comment_only):
-        assert comment_only.sloc() == 0
-
-    def test_excludes_docstrings(self, mixed_docstrings):
-        assert mixed_docstrings.sloc() == 3
-
-    def test_empty(self, empty):
-        assert empty.sloc() == 0
+        assert empty.lloc == 0
 
 
 class TestNChar:
     def test_simple(self, simple):
-        assert simple.n_char() < 70
-
-    def test_complex(self, complex):
-        assert complex.n_char() > 100
+        assert 390 < simple.n_char < 400
 
     def test_empty(self, empty):
-        assert empty.n_char() == 0
-
-
-class TestEdgeCases:
-    def test_syntax_error_handling(self, syntax_error):
-        assert syntax_error.loc() == 1
-        assert syntax_error.lloc() == 1
-        assert syntax_error.sloc() == 1
-        assert syntax_error.n_char() == len("def invalid syntax here")
-
-    def test_unicode_content(self, unicode_content):
-        assert unicode_content.n_char() > 50
-        assert unicode_content.loc() > 0
-
-    def test_multiline_strings(self, multiline_strings):
-        assert multiline_strings.loc() == 8
-        assert multiline_strings.lloc() == 4
-        assert multiline_strings.sloc() == 6
-
-    def test_only_whitespace(self, whitespace_only):
-        assert whitespace_only.loc() == 3
-        assert whitespace_only.sloc() == 0
-        assert whitespace_only.lloc() == 0
+        assert empty.n_char == 0
 
 
 class TestNFunctions:
     def test_simple(self, simple):
-        assert simple.n_functions() == 1
+        assert simple.n_functions == 1
 
-    def test_complex(self, complex):
-        assert complex.n_functions() == 3
+    def test_counting(self, counting):
+        assert counting.n_functions == 11
 
     def test_empty(self, empty):
-        assert empty.n_functions() == 0
+        assert empty.n_functions == 0
 
 
 class TestNClasses:
     def test_simple(self, simple):
-        assert simple.n_classes() == 0
+        assert simple.n_classes == 0
 
-    def test_complex(self, complex):
-        assert complex.n_classes() == 1
+    def test_counting(self, counting):
+        assert counting.n_classes == 2
 
     def test_empty(self, empty):
-        assert empty.n_classes() == 0
+        assert empty.n_classes == 0
 
 
-class TestImports:
+class TestNImports:
     def test_simple(self, simple):
-        assert simple.n_imports() == 0
+        assert simple.n_imports == 0
 
-    def test_complex(self, complex):
-        assert complex.n_imports() == 0
+    def test_counting(self, counting):
+        assert counting.n_imports == 5  # from math import sqrt is hidden
 
     def test_empty(self, empty):
-        assert empty.n_imports() == 0
-
-    def test_imports(self, imports):
-        assert imports.n_imports() == 3
+        assert empty.n_imports == 0
 
 
-class TestNModules:
+class TestNImportedModules:
     def test_simple(self, simple):
-        assert simple.n_imported_modules() == 0
+        assert simple.n_imported_modules == 0
 
-    def test_complex(self, complex):
-        assert complex.n_imported_modules() == 0
+    def test_counting(self, counting):
+        assert counting.n_imported_modules == 4  # math is imported twice
 
     def test_empty(self, empty):
-        assert empty.n_imported_modules() == 0
+        assert empty.n_imported_modules == 0
 
-    def test_imports(self, imports):
-        assert imports.n_imported_modules() == 2  # math and operator
+
+class TestEdgeCases:
+    def test_syntax_error_handling(self, syntax_error):
+        assert syntax_error.radon_analysis.loc == 1
+        assert syntax_error.radon_analysis.lloc == 1
+        assert syntax_error.radon_analysis.sloc == 1
+        assert syntax_error.n_char() == len("def invalid syntax here")
+
+    def test_unicode_content(self, unicode_content):
+        assert unicode_content.n_char() > 50
+        assert unicode_content.radon_analysis.loc > 0
+
+    def test_multiline_strings(self, multiline_strings):
+        assert multiline_strings.radon_analysis.loc == 8
+        assert multiline_strings.radon_analysis.lloc == 4
+        assert multiline_strings.radon_analysis.sloc == 6
+
+    def test_only_whitespace(self, whitespace_only):
+        assert whitespace_only.radon_analysis.loc == 3
+        assert whitespace_only.radon_analysis.sloc == 0
+        assert whitespace_only.radon_analysis.lloc == 0
 
 
 class TestCyclomaticComplexity:

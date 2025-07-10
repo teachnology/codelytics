@@ -1,14 +1,15 @@
 import ast
+import functools
 import io
 import pathlib
 import tokenize
 
 import complexipy
 import pandas as pd
-from radon.complexity import cc_visit
+import radon
+import radon.complexity
+import radon.visitors
 from radon.metrics import h_visit
-from radon.raw import analyze
-from radon.visitors import Class, Function
 
 
 class Py:
@@ -19,6 +20,15 @@ class Py:
     source : pathlib.Path or str
         Either a Path object pointing to a Python file or a string containing Python
         code.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the provided Path does not point to an existing file.
+    ValueError
+        If the provided Path does not have a .py extension.
+    TypeError
+        If the source is neither a pathlib.Path object nor a string.
 
     """
 
@@ -34,64 +44,61 @@ class Py:
         else:
             raise TypeError("Source must be a pathlib.Path object or string")
 
-    def loc(self):
+    @functools.cached_property
+    def radon_analysis(self):
         """
-        Return the number of physical lines of code.
+        Perform a Radon analysis on the Python code.
 
-        Physical lines of code includes all lines in the file including blank lines,
-        comments, docstrings, and code lines.
+        Refer to the Radon documentation for details on the returned metrics:
+        https://github.com/rubik/radon/blob/master/radon/raw.py
+
+        Available metrics include:
+
+        - loc: physical lines of code (total lines), including comments, docstrings, and
+          blank lines
+
+        - lloc: logical lines of code, including docstrings, but excluding comments and
+          blank lines. Multiline docstrings count as one line.
+
+        - sloc: source lines of code (excludes comments, blank lines, and docstrings).
+          Command continuation lines are counted as multiple lines.
+
+        - comments: number of comments
+
+        - multi: number of multi-line comments
+
+        - blank: number of blank lines
 
         Returns
         -------
-        int
-            Number of physical lines of code.
+        radon.raw.Module
+            The raw report (namedtuple) containing various metrics like LOC, LLOC, SLOC,
+            etc. Returns None if the content cannot be parsed.
         """
         try:
-            return analyze(self.content).loc
+            return radon.raw.analyze(self.content)
         except Exception:
-            # Fallback for any parsing errors
-            return len(self.content.splitlines())
+            return None
 
+    @property
     def lloc(self):
         """
-        Return the number of logical lines of code.
+        Return the number of logical lines of code (LLOC).
 
-        Logical lines of code represents the number of executable statements. This uses
-        Radon's analysis to count actual Python statements. It includes docstrings, but
-        excludes comments and blank lines.
+        Radon analysis counts docstings as logical lines. Each doctring counts as one
+        logical line. However, we want docstings to be excluded from the LLOC count.
+        Therefore, this method is radon's lloc minus the number of docstrings.
 
-        If the content cannot be parsed, it returns 0.
-
-        Returns
-        -------
-        int
-            Number of logical lines of code.
-        """
-        try:
-            return analyze(self.content).lloc
-        except Exception:
-            return 0
-
-    def sloc(self):
-        """
-        Return the number of source lines of code.
-
-        Source lines of code excludes blank lines, comments, and docstrings. Only actual
-        executable code lines are counted. Command continuation lines are counted as
-        multiple lines.
-
-        If the content cannot be parsed, it returns 0.
+        This method can be understood as the "work done" metric.
 
         Returns
         -------
         int
-            Number of source lines of code.
+            Total number of logical lines of code, excluding docstrings.
         """
-        try:
-            return analyze(self.content).sloc
-        except Exception:
-            return 0
+        return self.radon_analysis.lloc - len(self.docstrings())
 
+    @property
     def n_char(self):
         """
         Return the number of characters.
@@ -103,6 +110,15 @@ class Py:
         """
         return len(self.content)
 
+    @functools.cached_property
+    def _cc_results(self):
+        """Cache the cc_visit results for reuse across methods."""
+        try:
+            return radon.complexity.cc_visit(self.content)
+        except Exception:
+            return []
+
+    @property
     def n_functions(self):
         """
         Return the number of functions.
@@ -117,13 +133,11 @@ class Py:
         int
             Total number of function definitions.
         """
-        try:
-            results = cc_visit(self.content)
-            # Count only Function objects, excluding Class objects
-            return sum(1 for item in results if isinstance(item, Function))
-        except Exception:
-            return 0
+        return sum(
+            1 for item in self._cc_results if isinstance(item, radon.visitors.Function)
+        )
 
+    @property
     def n_classes(self):
         """
         Return the number of classes in the Python code.
@@ -136,13 +150,19 @@ class Py:
         int
             Total number of class definitions.
         """
-        try:
-            results = cc_visit(self.content)
-            # Count only Class objects, excluding Function objects
-            return sum(1 for item in results if isinstance(item, Class))
-        except Exception:
-            return 0
+        return sum(
+            1 for item in self._cc_results if isinstance(item, radon.visitors.Class)
+        )
 
+    @functools.cached_property
+    def _ast_tree(self):
+        """Cache the AST tree for reuse across methods."""
+        try:
+            return ast.parse(self.content)
+        except Exception:
+            return None
+
+    @property
     def n_imports(self):
         """
         Return the number of import statements in the Python code.
@@ -159,28 +179,26 @@ class Py:
         int
             Total number of import statements.
         """
-        try:
-            tree = ast.parse(self.content)
-            import_count = 0
-
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import | ast.ImportFrom):
-                    import_count += 1
-
-            return import_count
-        except Exception:
+        if self._ast_tree is None:
             return 0
 
+        return sum(
+            1
+            for node in ast.walk(self._ast_tree)
+            if isinstance(node, (ast.Import | ast.ImportFrom))
+        )
+
+    @property
     def n_imported_modules(self):
         """
         Return the number of unique modules imported in the Python code.
 
         Counts unique top-level modules/packages that are imported, regardless
         of how many times they appear or what is imported from them.
-        - import os, sys → 2 modules
-        - import os.path, os.environ → 1 module (os)
-        - from pathlib import Path; import pathlib → 1 module (pathlib)
-        - from . import local → 0 modules (relative import)
+        - import os, sys -> 2 modules
+        - import os.path, os.environ -> 1 module (os)
+        - from pathlib import Path; import pathlib -> 1 module (pathlib)
+        - from . import local -> 0 modules (relative import)
 
         If the content cannot be parsed, it returns 0.
 
@@ -190,10 +208,9 @@ class Py:
             Total number of unique modules imported.
         """
         try:
-            tree = ast.parse(self.content)
             modules = set()
 
-            for node in ast.walk(tree):
+            for node in ast.walk(self._ast_tree):
                 if isinstance(node, ast.Import):
                     # Handle: import module, import module.submodule
                     for alias in node.names:

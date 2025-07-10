@@ -200,7 +200,5 @@ class Dir:
             except Exception:
                 continue
 
-        if content_type == "code":
-            return Py("\n\n".join(content_parts))
-        else:
-            return TextAnalysis(["\n\n".join(content_parts)])
+        source = "\n\n".join(content_parts)
+        return Py(source) if content_type == "code" else TextAnalysis([source])

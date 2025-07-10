@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from codelytics import Comments, Docstrings, TextAnalysis
+from codelytics import TextAnalysis
 
 
 @pytest.fixture
@@ -15,12 +15,7 @@ def empty():
 
 
 @pytest.fixture
-def single():
-    return TextAnalysis(["Single comment here."])
-
-
-@pytest.fixture
-def complex():
+def unicode():
     return TextAnalysis(
         [
             "This is a sentence. Another sentence here.",
@@ -31,7 +26,7 @@ def complex():
 
 
 @pytest.fixture
-def messy():
+def sentences():
     return TextAnalysis(
         [
             "This is a sentence. Another",
@@ -87,32 +82,23 @@ def why_or_what():
 
 
 class TestInit:
-    def test_comments_init(self, simple):
-        assert len(simple.texts) == 3
-
-
-class TestLen:
-    def test_comments(self, simple):
+    def test_simple(self, simple):
         assert len(simple) == 3
+        assert simple[2] == "Short."
 
     def test_empty(self, empty):
         assert len(empty) == 0
 
 
 class TestNWords:
+    def test_total(self, simple):
+        assert simple.n_words(total=True) == 7
+
     def test_mean(self, simple):
-        result = simple.n_words()
-        expected = (2 + 4 + 1) / 3
-        assert result == expected
+        assert simple.n_words(total=False, use_median=False) == (2 + 4 + 1) / 3
 
     def test_median(self, simple):
-        result = simple.n_words(use_median=True)
-        expected = 2.0
-        assert result == expected
-
-    def test_total(self, simple):
-        result = simple.n_words(total=True)
-        assert result == 7
+        assert simple.n_words(total=False, use_median=True) == 2.0
 
     def test_empty(self, empty):
         assert empty.n_words() == 0.0
@@ -120,57 +106,61 @@ class TestNWords:
 
 
 class TestNChars:
-    def test_mean(self, simple):
-        result = simple.n_chars()
-        expected = (12 + 15 + 6) / 3
-        assert result == expected
-
     def test_total(self, simple):
-        result = simple.n_chars(total=True)
-        assert result == 33
+        assert simple.n_chars(total=True) == 33
+
+    def test_mean(self, simple):
+        assert simple.n_chars(total=False, use_median=False) == (12 + 15 + 6) / 3
+
+    def test_median(self, simple):
+        assert simple.n_chars(total=False, use_median=True) == 12.0
+
+    def test_empty(self, empty):
+        assert empty.n_chars() == 0.0
+        assert empty.n_chars(total=True) == 0
 
 
 class TestNNonAscii:
     def test_simple(self, simple):
-        result = simple.n_non_ascii()
-        assert result == 0.0
+        assert simple.n_non_ascii(total=True) == 0
+        assert simple.n_non_ascii(total=False, use_median=False) == 0.0
+        assert simple.n_non_ascii(total=False, use_median=True) == 0.0
 
-    def test_unicode(self, complex):
-        result = complex.n_non_ascii(total=True)
-        assert result == 4  # café (1) + résumé (2) + naïve (1)
-
-    def test_complex_texts(self, complex):
-        assert complex.n_non_ascii(total=False, use_median=True) == 0
+    def test_unicode(self, unicode):
+        assert unicode.n_non_ascii(total=True) == 4  # café (1) + résumé (2) + naïve (1)
         assert np.isclose(
-            complex.n_non_ascii(total=False, use_median=False), (0 + 4 + 0) / 3
+            unicode.n_non_ascii(total=False, use_median=False), (0 + 4 + 0) / 3
         )
+        assert unicode.n_non_ascii(total=False, use_median=True) == 0
+
+    def test_empty(self, empty):
+        assert empty.n_non_ascii() == 0.0
+        assert empty.n_non_ascii(total=True) == 0
 
 
 class TestNSentences:
-    def test_mean(self, simple):
+    def test_simple(self, simple):
+        assert simple.n_sentences(total=True) == 3
         assert simple.n_sentences(total=False, use_median=False) == 1.0
         assert simple.n_sentences(total=False, use_median=True) == 1.0
 
-    def test_total(self, simple):
-        assert simple.n_sentences(total=True) == 3
+    def test_sentences(self, sentences):
+        assert sentences.n_sentences(total=True) == 3
+        assert np.isclose(
+            sentences.n_sentences(total=False, use_median=False), (1 + 0 + 1 + 1) / 4
+        )
+        assert sentences.n_sentences(total=False, use_median=True) == 1.0
 
-    def test_messy(self, messy):
-        assert messy.n_sentences(total=False, use_median=False) == (1 + 0 + 1 + 1) / 4
-        assert messy.n_sentences(total=False, use_median=True) == 1.0
-        assert messy.n_sentences(total=True) == 3
-
-
-class TestDerived:
-    def test_comments_inheritance(self, simple):
-        assert Comments(simple.texts).n_words() == simple.n_words()
-        assert Docstrings(simple.texts).n_words() == simple.n_words()
+    def test_empty(self, empty):
+        assert empty.n_sentences() == 0.0
+        assert empty.n_sentences(total=True) == 0
 
 
 class TestSpellCheck:
     def test_spell_check(self, spell_check):
         assert spell_check.misspelled_words(total=True) == 3
         assert np.isclose(
-            spell_check.misspelled_words(total=False, use_median=False), 1
+            spell_check.misspelled_words(total=False, use_median=False), (0 + 3 + 0) / 3
         )
         assert np.isclose(spell_check.misspelled_words(total=False, use_median=True), 0)
 
@@ -191,4 +181,4 @@ class TestWhyOrWhat:
     def test_mean(self, why_or_what):
         result = why_or_what.why_or_what()
         # Should be around 0.4-0.5 (proportion of 'why' comments)
-        assert 0.3 <= result <= 0.6
+        assert 0.4 <= result <= 0.6

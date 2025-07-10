@@ -307,7 +307,9 @@ class TestEdgeCases:
 
 class TestUserDefinedNames:
     def test_simple(self, simple):
-        assert all(name in simple.user_defined_names.names for name in ["hello", "name"])
+        assert all(
+            name in simple.user_defined_names.names for name in ["hello", "name"]
+        )
 
     def test_user_defined_names(self, user_defined_names):
         names = user_defined_names.user_defined_names.names

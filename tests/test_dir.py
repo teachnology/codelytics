@@ -139,7 +139,7 @@ class TestExtract:
         assert isinstance(code, cdl.Py)
         assert len(code.content) > 0
 
-        assert 'print(1 + 2 + 3)' in code.content
+        assert "print(1 + 2 + 3)" in code.content
         assert "# Walrus operator" in code.content
         assert "print(sh)" in code.content
 

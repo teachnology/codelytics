@@ -88,9 +88,11 @@ class Notebook:
         )
         if cell_type == "code":
             from codelytics import Py  # noqa: PLC0415
+
             return Py(content)
         elif cell_type == "markdown":
             from codelytics import TextAnalysis  # noqa: PLC0415
+
             return TextAnalysis([content])
         else:
             raise ValueError(f"Unsupported cell type: {cell_type}")

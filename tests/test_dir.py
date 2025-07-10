@@ -3,12 +3,12 @@ import subprocess
 
 import pytest
 
-import codelytics
+import codelytics as cdl
 
 
 @pytest.fixture
 def dir():
-    return codelytics.Dir(path=pathlib.Path(__file__).parent / "data" / "project01")
+    return cdl.Dir(path=pathlib.Path(__file__).parent / "data" / "project01")
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def repo(tmp_path):
     for cmd in commands:
         subprocess.run(cmd, cwd=tmp_path, check=True, capture_output=True)
 
-    return codelytics.Dir(tmp_path)
+    return cdl.Dir(tmp_path)
 
 
 class TestInit:
@@ -41,18 +41,18 @@ class TestInit:
         assert dir.path.exists() and dir.path.is_dir()
 
     def test_with_pathlib_object(self, tmp_path):
-        dir = codelytics.Dir(tmp_path)
+        dir = cdl.Dir(tmp_path)
         assert dir.path == tmp_path
 
     def test_nonexistent_directory(self):
         with pytest.raises(FileNotFoundError):
-            codelytics.Dir("/nonexistent/directory/somewhere")
+            cdl.Dir("/nonexistent/directory/somewhere")
 
     def test_file_not_directory(self, tmp_path):
         temp_file = tmp_path / "test_file.txt"
         temp_file.write_text("content")
         with pytest.raises(NotADirectoryError):
-            codelytics.Dir(temp_file)
+            cdl.Dir(temp_file)
 
 
 class TestGitRepository:
@@ -76,7 +76,7 @@ class TestGitRepository:
 
 class TestFileIteration:
     def test_iter_empty_directory(self, tmp_path):
-        dir = codelytics.Dir(tmp_path)
+        dir = cdl.Dir(tmp_path)
 
         assert len(dir) == len(list(dir)) == len(list(dir.iter_files(suffix=None))) == 0
 
@@ -125,7 +125,7 @@ class TestFileCounting:
         assert dir.n_files("md") == 1
 
     def test_files_empty_directory(self, tmp_path):
-        dir = codelytics.Dir(tmp_path)
+        dir = cdl.Dir(tmp_path)
         assert dir.n_files() == 0
         assert dir.n_files("py") == 0
 
@@ -136,7 +136,7 @@ class TestFileCounting:
 class TestExtract:
     def test_extract_code(self, dir):
         code = dir.extract("code")
-        assert isinstance(code, codelytics.Py)
+        assert isinstance(code, cdl.Py)
         assert len(code.content) > 0
 
         assert 'return "world"  # inline comment' in code.content
@@ -145,7 +145,7 @@ class TestExtract:
 
     def test_extract_markdown(self, dir):
         md = dir.extract("markdown")
-        assert isinstance(md, codelytics.TextAnalysis)
+        assert isinstance(md, cdl.TextAnalysis)
         assert len(md.texts) > 0
 
         assert "This is a readme file." in md.texts[0]

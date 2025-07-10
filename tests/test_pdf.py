@@ -2,22 +2,22 @@ import pathlib
 
 import pytest
 
-from codelytics import PDF
+import codelytics as cdl
 
 
 @pytest.fixture(scope="module")
 def pdf():
-    return PDF(pathlib.Path(__file__).parent / "data" / "report.pdf")
+    return cdl.PDF(pathlib.Path(__file__).parent / "data" / "report.pdf")
 
 
 class TestInit:
     def test_init(self, pdf):
-        assert isinstance(pdf, PDF)
+        assert isinstance(pdf, cdl.PDF)
         assert pdf.path == pathlib.Path(__file__).parent / "data" / "report.pdf"
 
     def test_init_nonexistent_file(self):
         with pytest.raises(FileNotFoundError):
-            PDF("nonexistent.pdf")
+            cdl.PDF("nonexistent.pdf")
 
 
 class TestProperties:

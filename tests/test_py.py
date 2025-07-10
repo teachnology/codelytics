@@ -4,49 +4,49 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from codelytics import Py
+import codelytics as cdl
 
 PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
 
 
 @pytest.fixture
 def simple():
-    return Py(PROJECT_DIR / "simple.py")
+    return cdl.Py(PROJECT_DIR / "simple.py")
 
 
 @pytest.fixture
 def counting():
-    return Py(PROJECT_DIR / "counting.py")
+    return cdl.Py(PROJECT_DIR / "counting.py")
 
 
 @pytest.fixture
 def empty():
-    return Py("")
+    return cdl.Py("")
 
 
 @pytest.fixture
 def mccabe():
-    return Py(PROJECT_DIR / "dir1" / "mccabe.py")
+    return cdl.Py(PROJECT_DIR / "dir1" / "mccabe.py")
 
 
 @pytest.fixture
 def cognitive_complexity():
-    return Py(PROJECT_DIR / "dir1" / "cognitive-complexity.py")
+    return cdl.Py(PROJECT_DIR / "dir1" / "cognitive-complexity.py")
 
 
 @pytest.fixture
 def complex():
-    return Py(PROJECT_DIR / "dir1" / "file02.py")
+    return cdl.Py(PROJECT_DIR / "dir1" / "file02.py")
 
 
 @pytest.fixture
 def halstead():
-    return Py(PROJECT_DIR / "dir1" / "halstead.py")
+    return cdl.Py(PROJECT_DIR / "dir1" / "halstead.py")
 
 
 @pytest.fixture
 def invalid_syntax():
-    return Py("""
+    return cdl.Py("""
 def invalid_syntax():
 return "This function has invalid syntax"
 
@@ -58,22 +58,22 @@ def another_invalid_syntax():
 
 @pytest.fixture
 def user_defined_names():
-    return Py(PROJECT_DIR / "dir1" / "user-defined-names.py")
+    return cdl.Py(PROJECT_DIR / "dir1" / "user-defined-names.py")
 
 
 class TestInitialization:
     def test_with_string(self):
         code = "x = 1"
-        py = Py(code)
+        py = cdl.Py(code)
         assert py.content == code
 
     def test_nonexistent_file(self):
         with pytest.raises(FileNotFoundError):
-            Py(pathlib.Path("nonexistent_file_somewhere.py"))
+            cdl.Py(pathlib.Path("nonexistent_file_somewhere.py"))
 
     def test_invalid_type(self):
         with pytest.raises(TypeError):
-            Py(123)
+            cdl.Py(123)
 
 
 class TestRadonAnalysis:

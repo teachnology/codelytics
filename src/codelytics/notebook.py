@@ -5,9 +5,9 @@ import nbformat
 
 class Notebook:
     """
-    Analyze Jupyter Notebook files.
+    Analyse Jupyter Notebook files.
 
-    Provides functionality to extract and analyze content from Jupyter notebooks,
+    Provides functionality to extract and analyse content from Jupyter notebooks,
     including code cells, markdown cells, and cell counting.
 
     Parameters
@@ -15,17 +15,10 @@ class Notebook:
     path : pathlib.Path or str
         Path to the Jupyter notebook file (.ipynb).
 
-    Attributes
-    ----------
-    path : pathlib.Path
-        Path to the notebook file.
-    nb : nbformat.NotebookNode
-        Parsed notebook object.
     """
 
     def __init__(self, path):
-        if isinstance(path, str):
-            path = pathlib.Path(path)
+        path = pathlib.Path(path)
 
         if not path.exists():
             raise FileNotFoundError(f"Notebook file not found: {path}")
@@ -86,10 +79,18 @@ class Notebook:
             All cells of specified type merged together as a single string.
             Returns empty string if no cells of the specified type found.
         """
-        return "\n\n".join(
+        content = "\n\n".join(
             [
                 cell.source
                 for cell in self.nb.cells
                 if cell.cell_type == cell_type and cell.source.strip()
             ]
         )
+        if cell_type == "code":
+            from codelytics import Py  # noqa: PLC0415
+            return Py(content)
+        elif cell_type == "markdown":
+            from codelytics import TextAnalysis  # noqa: PLC0415
+            return TextAnalysis([content])
+        else:
+            raise ValueError(f"Unsupported cell type: {cell_type}")

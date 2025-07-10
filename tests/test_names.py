@@ -1,16 +1,16 @@
 import pytest
 
-from codelytics import Names
+import codelytics as cdl
 
 
 @pytest.fixture
 def empty():
-    return Names(names=[])
+    return cdl.Names(names=[])
 
 
 @pytest.fixture
 def names():
-    return Names(
+    return cdl.Names(
         names=[
             "camelCase",
             "snake_case",
@@ -26,7 +26,7 @@ def names():
 
 @pytest.fixture
 def ascii():
-    return Names(names=["ascii_name", "name_with_emoji_😀", "名字_with_chinese"])
+    return cdl.Names(names=["ascii_name", "name_with_emoji_😀", "名字_with_chinese"])
 
 
 class TestInit:

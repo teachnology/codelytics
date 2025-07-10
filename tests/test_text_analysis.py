@@ -1,22 +1,22 @@
 import numpy as np
 import pytest
 
-from codelytics import TextAnalysis
+import codelytics as cdl
 
 
 @pytest.fixture
 def simple():
-    return TextAnalysis(["Hello world.", "This is a test.", "Short."])
+    return cdl.TextAnalysis(["Hello world.", "This is a test.", "Short."])
 
 
 @pytest.fixture
 def empty():
-    return TextAnalysis([])
+    return cdl.TextAnalysis([])
 
 
 @pytest.fixture
 def unicode():
-    return TextAnalysis(
+    return cdl.TextAnalysis(
         [
             "This is a sentence. Another sentence here.",
             "Unicode test: café résumé naïve.",
@@ -27,7 +27,7 @@ def unicode():
 
 @pytest.fixture
 def sentences():
-    return TextAnalysis(
+    return cdl.TextAnalysis(
         [
             "This is a sentence. Another",
             "add value",
@@ -39,7 +39,7 @@ def sentences():
 
 @pytest.fixture
 def spell_check():
-    return TextAnalysis(
+    return cdl.TextAnalysis(
         [
             "This is a simple test.",
             "Ths is a smple tst with some misspelled words.",
@@ -50,7 +50,7 @@ def spell_check():
 
 @pytest.fixture
 def why_or_what():
-    return TextAnalysis(
+    return cdl.TextAnalysis(
         [
             # 'Why' comments (explaining rationale/reasoning)
             "Use binary search because linear search is too slow for large datasets",

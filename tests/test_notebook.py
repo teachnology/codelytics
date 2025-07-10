@@ -2,20 +2,20 @@ import pathlib
 
 import pytest
 
-from codelytics import Notebook
+import codelytics as cdl
 
 
 @pytest.fixture
 def nb():
-    return Notebook(
+    return cdl.Notebook(
         pathlib.Path(__file__).parent / "data" / "project01" / "notebook01.ipynb"
     )
 
 
 class TestInit:
-    def test_invalid(self, nb):
+    def test_invalid(self):
         with pytest.raises(FileNotFoundError):
-            Notebook(
+            cdl.Notebook(
                 pathlib.Path(__file__).parent / "data" / "project01" / "notebook01.txt"
             )
 
@@ -37,13 +37,15 @@ class TestNCells:
 class TestExtraction:
     def test_py(self, nb):
         code = nb.extract(cell_type="code")
-        assert isinstance(code, str)
-        assert "import pandas as pd" in code
-        assert "sh = pd.DataFrame(data)" in code
+        assert isinstance(code, cdl.Py)
+        assert "import pandas as pd" in code.content
+        assert "sh = pd.DataFrame(data)" in code.content
 
     def test_md(self, nb):
         md = nb.extract(cell_type="markdown")
-        assert isinstance(md, str)
-        assert "# Test Notebook" in md
-        assert "## Conclusion" in md
-        assert "is complete" in md
+        assert isinstance(md, cdl.TextAnalysis)
+        assert len(md) == 1
+        assert "# Test Notebook" in md[0]
+        assert "analyse the data:" in md[0]
+        assert "## Conclusion" in md[0]
+        assert "is complete" in md[0]

@@ -8,8 +8,8 @@ import complexipy
 import pandas as pd
 import radon
 import radon.complexity
-import radon.visitors
 import radon.metrics
+import radon.visitors
 
 
 class Py:

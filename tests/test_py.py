@@ -1,9 +1,10 @@
 import pathlib
 
 import numpy as np
-import pytest
 import pandas as pd
-from codelytics import Py, Names
+import pytest
+
+from codelytics import Py
 
 PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
 
@@ -45,7 +46,14 @@ def halstead():
 
 @pytest.fixture
 def invalid_syntax():
-    return Py(PROJECT_DIR / "invalid-syntax.py")
+    return Py("""
+def invalid_syntax():
+return "This function has invalid syntax"
+
+def another_invalid_syntax():
+    if True
+        return "This function also has invalid syntax"
+""")
 
 
 @pytest.fixture

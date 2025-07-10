@@ -184,7 +184,7 @@ class Dir:
 
                     elif file_path.suffix == ".ipynb":
                         nb = Notebook(file_path)
-                        content = nb.extract("code")
+                        content = nb.extract("code").content
 
                 elif content_type == "markdown":
                     if file_path.suffix == ".md":
@@ -192,7 +192,7 @@ class Dir:
 
                     elif file_path.suffix == ".ipynb":
                         nb = Notebook(file_path)
-                        content = nb.extract("markdown")
+                        content = nb.extract("markdown")[0]
 
                 if content.strip():
                     content_parts.append(content)

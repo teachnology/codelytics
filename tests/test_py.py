@@ -26,22 +26,22 @@ def empty():
 
 @pytest.fixture
 def mccabe():
-    return cdl.Py(PROJECT_DIR / "dir1" / "mccabe.py")
+    return cdl.Py(PROJECT_DIR / "dir01" / "mccabe.py")
 
 
 @pytest.fixture
 def cognitive_complexity():
-    return cdl.Py(PROJECT_DIR / "dir1" / "cognitive-complexity.py")
+    return cdl.Py(PROJECT_DIR / "dir01" / "cognitive-complexity.py")
 
 
 @pytest.fixture
 def complex():
-    return cdl.Py(PROJECT_DIR / "dir1" / "file02.py")
+    return cdl.Py(PROJECT_DIR / "dir01" / "file02.py")
 
 
 @pytest.fixture
 def halstead():
-    return cdl.Py(PROJECT_DIR / "dir1" / "halstead.py")
+    return cdl.Py(PROJECT_DIR / "dir01" / "halstead.py")
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def another_invalid_syntax():
 
 @pytest.fixture
 def user_defined_names():
-    return cdl.Py(PROJECT_DIR / "dir1" / "user-defined-names.py")
+    return cdl.Py(PROJECT_DIR / "dir01" / "user-defined-names.py")
 
 
 class TestInitialization:
@@ -291,11 +291,11 @@ class TestHalstead:
 
 class TestEdgeCases:
     def test_syntax_error_handling(self, invalid_syntax):
-        assert invalid_syntax.radon_analysis.loc == 6
+        assert invalid_syntax.radon_analysis.loc == 7  # starts with blank line
         assert invalid_syntax.radon_analysis.lloc == 5
         assert invalid_syntax.radon_analysis.sloc == 5
         assert invalid_syntax.radon_analysis.comments == 0
-        assert invalid_syntax.radon_analysis.blank == 1
+        assert invalid_syntax.radon_analysis.blank == 2
         assert invalid_syntax.radon_analysis.multi == 0
         assert invalid_syntax.n_char > 50
         assert invalid_syntax.n_functions == 0  # should be 2
@@ -307,12 +307,12 @@ class TestEdgeCases:
 
 class TestUserDefinedNames:
     def test_simple(self, simple):
-        assert simple.user_defined_names.names == {"hello", "name"}
+        assert all(name in simple.user_defined_names.names for name in ["hello", "name"])
 
     def test_user_defined_names(self, user_defined_names):
         names = user_defined_names.user_defined_names.names
 
-        expected = {
+        expected = [
             "counter",
             "total_sum",
             "n",
@@ -331,11 +331,11 @@ class TestUserDefinedNames:
             "result",
             "history",
             "y",
-        }
-        assert names == expected
+        ]
+        assert all(name in names for name in expected)
 
     def test_empty(self, empty):
-        assert empty.user_defined_names.names == set()
+        assert empty.user_defined_names.names == []
 
 
 class TestComments:

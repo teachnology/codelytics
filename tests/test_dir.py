@@ -120,8 +120,8 @@ class TestFileCounting:
         assert total_files == len(list(dir))
 
     def test_files_with_suffix(self, dir):
-        assert dir.n_files("py") == 9
-        assert dir.n_files(".py") == 9
+        assert dir.n_files("py") == 7
+        assert dir.n_files(".py") == 7
         assert dir.n_files("md") == 1
 
     def test_files_empty_directory(self, tmp_path):
@@ -139,8 +139,8 @@ class TestExtract:
         assert isinstance(code, cdl.Py)
         assert len(code.content) > 0
 
-        assert 'return "world"  # inline comment' in code.content
-        assert "total_sum = sum([1, 2, 3])  # 'total_sum' included" in code.content
+        assert 'print(1 + 2 + 3)' in code.content
+        assert "# Walrus operator" in code.content
         assert "print(sh)" in code.content
 
     def test_extract_markdown(self, dir):
@@ -149,7 +149,7 @@ class TestExtract:
         assert len(md.texts) > 0
 
         assert "This is a readme file." in md.texts[0]
-        assert "Let's analyze the data:" in md.texts[0]
+        assert "Let's analyse the data:" in md.texts[0]
 
     def test_extract_invalid_content_type(self, dir):
         with pytest.raises(ValueError):

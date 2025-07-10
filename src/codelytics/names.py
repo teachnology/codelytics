@@ -8,28 +8,29 @@ class Names:
     Analyse user-defined names from Python code.
 
     This class provides functionality to analyse various aspects of user-defined
-    names such as variables, function names, class names, etc. extracted from
+    names such as variables, function names, class names, and others extracted from
     Python code.
 
     Parameters
     ----------
-    names : set of str
+    names : Iterable of str
         Set of user-defined names (variables, function names, class names, etc.)
         from Python code.
 
     Attributes
     ----------
-    names : set of str
-        The set of user-defined names.
+    names : list of str
+        The list of user-defined names.
     """
 
     def __init__(self, names):
-        self.names = set(names)
+        self.names = list(set(names))
 
     def __len__(self):
         """Return the number of names."""
         return len(self.names)
 
+    @property
     def n_chars(self):
         """
         Return number of characters for each name.
@@ -41,6 +42,7 @@ class Names:
         """
         return pd.Series({name: len(name) for name in self.names}, name="n_chars")
 
+    @property
     def camel_case(self):
         """
         Check if names are written in pure camel case.
@@ -60,6 +62,7 @@ class Names:
             name="camel_case",
         )
 
+    @property
     def snake_case(self):
         """
         Check if names are written in snake case.
@@ -79,6 +82,7 @@ class Names:
             name="snake_case",
         )
 
+    @property
     def pascal_case(self):
         """
         Check if names are written in Pascal case.
@@ -98,6 +102,7 @@ class Names:
             name="pascal_case",
         )
 
+    @property
     def private(self):
         """
         Check if names are private variables.
@@ -117,6 +122,7 @@ class Names:
             name="private",
         )
 
+    @property
     def endswith_number(self):
         """
         Check if names end with a number.
@@ -135,6 +141,7 @@ class Names:
             name="endswith_number",
         )
 
+    @property
     def ascii(self):
         """
         Check if names contain only ASCII characters.
@@ -153,6 +160,7 @@ class Names:
             {name: bool(ascii_pattern.match(name)) for name in self.names}, name="ascii"
         )
 
+    @property
     def stats(self):
         """
         Get statistics about the user-defined names.
@@ -171,13 +179,13 @@ class Names:
         """
         return pd.concat(
             [
-                self.n_chars(),
-                self.camel_case(),
-                self.snake_case(),
-                self.pascal_case(),
-                self.private(),
-                self.endswith_number(),
-                self.ascii(),
+                self.n_chars,
+                self.camel_case,
+                self.snake_case,
+                self.pascal_case,
+                self.private,
+                self.endswith_number,
+                self.ascii,
             ],
             axis=1,
         )

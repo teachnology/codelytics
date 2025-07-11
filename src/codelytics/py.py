@@ -3,6 +3,7 @@ import functools
 import io
 import pathlib
 import tokenize
+import warnings
 
 import complexipy
 import pandas as pd
@@ -172,7 +173,10 @@ class Py:
     def _ast_tree(self):
         """Cache the AST tree for reuse across methods."""
         try:
-            return ast.parse(self.content)
+            # Suppress SyntaxWarnings during parsing
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=SyntaxWarning)
+                return ast.parse(self.content)
         except Exception:
             return None
 

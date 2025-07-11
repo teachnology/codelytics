@@ -556,6 +556,9 @@ class Dir:
                 stats_dict["markdown_sentences_total"] = all_markdown.n_sentences(
                     total=True
                 )
+                stats_dict["markdown_non_ascii_total"] = all_markdown.n_non_ascii(
+                    total=True
+                )
                 stats_dict["markdown_misspelled_total"] = all_markdown.misspelled_words(
                     total=True
                 )
@@ -564,6 +567,7 @@ class Dir:
                     "markdown_words_total",
                     "markdown_chars_total",
                     "markdown_sentences_total",
+                    "markdown_non_ascii_total",
                     "markdown_misspelled_total",
                 ]:
                     stats_dict[key] = 0
@@ -571,6 +575,7 @@ class Dir:
             for key in [
                 "markdown_words_total",
                 "markdown_chars_total",
+                "markdown_non_ascii_total",
                 "markdown_sentences_total",
                 "markdown_misspelled_total",
             ]:

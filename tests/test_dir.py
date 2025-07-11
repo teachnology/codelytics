@@ -2,6 +2,7 @@ import pathlib
 import shutil
 import subprocess
 
+import pandas as pd
 import pytest
 
 import codelytics as cdl
@@ -196,3 +197,11 @@ class TestExtractionInvalid:
         md_invalid = invalid_dir.extract("markdown")
         md_valid = dir.extract("markdown")
         assert md_invalid.texts == md_valid.texts
+
+
+class TestStats:
+    def test_stats(self, dir):
+        stats = dir.stats()
+        assert isinstance(stats, pd.Series)
+
+        assert stats.loc["docstrings_non_ascii_total"] == 1

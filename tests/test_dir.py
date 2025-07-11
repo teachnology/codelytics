@@ -1,11 +1,10 @@
 import pathlib
-import subprocess
 import shutil
+import subprocess
 
 import pytest
 
 import codelytics as cdl
-
 
 PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
 

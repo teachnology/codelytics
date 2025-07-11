@@ -178,6 +178,17 @@ class TestNImportedModules:
         assert empty.n_imported_modules == 0
 
 
+class TestIsValidSyntax:
+    def test_valid_syntax(self, simple):
+        assert simple.is_valid_syntax
+
+    def test_invalid_syntax(self, invalid_syntax):
+        assert not invalid_syntax.is_valid_syntax
+
+    def test_empty(self, empty):
+        assert empty.is_valid_syntax is True  # Empty files are considered valid
+
+
 class TestMcCabe:
     def test_simple(self, simple):
         # 1 for the if statement, +1 by default

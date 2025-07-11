@@ -8,7 +8,14 @@ import codelytics as cdl
 @pytest.fixture
 def nb():
     return cdl.Notebook(
-        pathlib.Path(__file__).parent / "data" / "project01" / "notebook01.ipynb"
+        pathlib.Path(__file__).parent / "data" / "project01" / "valid-notebook.ipynb"
+    )
+
+
+@pytest.fixture
+def invalid_nb():
+    return cdl.Notebook(
+        pathlib.Path(__file__).parent / "data" / "project01" / "invalid-notebook.ipynb"
     )
 
 
@@ -34,7 +41,7 @@ class TestNCells:
         assert nb.n_cells(cell_type="raw") == 1
 
 
-class TestExtraction:
+class TestExtractionValid:
     def test_py(self, nb):
         code = nb.extract(cell_type="code")
         assert isinstance(code, cdl.Py)
@@ -49,3 +56,22 @@ class TestExtraction:
         assert "analyse the data:" in md[0]
         assert "## Conclusion" in md[0]
         assert "is complete" in md[0]
+
+
+class TestExtractionInvalid:
+    def test_py(self, invalid_nb):
+        code = invalid_nb.extract(cell_type="code")
+        assert isinstance(code, cdl.Py)
+        assert "import numpy as np" not in code.content
+        assert "to_array(lst)" not in code.content
+        assert "a + b" not in code.content
+        assert "def valid_syntax():" in code.content
+
+    def test_md(self, invalid_nb):
+        md = invalid_nb.extract(cell_type="markdown")
+        assert isinstance(md, cdl.TextAnalysis)
+        assert len(md) == 1
+        assert "# Invalid analysis - do not run this notebook" in md[0]
+        assert "## Another wrong cell" in md[0]
+        assert "Wrong indentations in the cell below:" in md[0]
+        assert "Finally, one correct cell:" in md[0]

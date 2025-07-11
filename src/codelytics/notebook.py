@@ -63,36 +63,52 @@ class Notebook:
 
         Merges all cells of the specified type into a single string,
         preserving the order of cells in the notebook. Each cell is
-        separated by double newlines.
+        separated by double newlines. For code cells, filters out cells
+        with syntax errors.
 
         Parameters
         ----------
         cell_type : str
             Type of cells to extract. Options are:
-            - 'code': Extract code cells
+            - 'code': Extract code cells (excludes cells with syntax errors)
             - 'markdown': Extract markdown cells
-            - 'raw': Extract raw cells
 
         Returns
         -------
-        str
-            All cells of specified type merged together as a single string.
-            Returns empty string if no cells of the specified type found.
+        str or Py or TextAnalysis
+            All cells of specified type merged together.
+            - For 'code': Returns Py object with valid syntax cells only
+            - For 'markdown': Returns TextAnalysis object
+            Returns empty content if no valid cells of the specified type found.
         """
-        content = "\n\n".join(
-            [
-                cell.source
-                for cell in self.nb.cells
-                if cell.cell_type == cell_type and cell.source.strip()
-            ]
-        )
         if cell_type == "code":
             from codelytics import Py  # noqa: PLC0415
 
-            return Py(content)
+            valid_cells = []
+
+            for cell in self.nb.cells:
+                if cell.cell_type == cell_type and cell.source.strip():
+                    # Check if this individual cell has valid syntax
+                    try:
+                        if Py(cell.source).is_valid_syntax:
+                            valid_cells.append(cell.source)
+                    except Exception:
+                        # Skip cells that can't be processed at all
+                        continue
+
+            return Py("\n\n".join(valid_cells))
+
         elif cell_type == "markdown":
             from codelytics import TextAnalysis  # noqa: PLC0415
 
+            content = "\n\n".join(
+                [
+                    cell.source
+                    for cell in self.nb.cells
+                    if cell.cell_type == cell_type and cell.source.strip()
+                ]
+            )
             return TextAnalysis([content])
+
         else:
             raise ValueError(f"Unsupported cell type: {cell_type}")

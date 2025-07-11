@@ -162,6 +162,20 @@ class Py:
         except Exception:
             return None
 
+    @functools.cached_property
+    def is_valid_syntax(self):
+        """
+        Check if the Python source code has valid syntax.
+
+        This method leverages the cached AST tree to determine syntax validity.
+
+        Returns
+        -------
+        bool
+            True if the code can be parsed without syntax errors, False otherwise.
+        """
+        return self._ast_tree is not None
+
     @property
     def n_imports(self):
         """
@@ -179,7 +193,7 @@ class Py:
         int
             Total number of import statements.
         """
-        if self._ast_tree is None:
+        if not self.is_valid_syntax:
             return 0
 
         return sum(
@@ -207,23 +221,23 @@ class Py:
         int
             Total number of unique modules imported.
         """
-        try:
-            modules = set()
-
-            for node in ast.walk(self._ast_tree):
-                if isinstance(node, ast.Import):
-                    # Handle: import module, import module.submodule
-                    for alias in node.names:
-                        modules.add(alias.name.split(".")[0])
-
-                elif isinstance(node, ast.ImportFrom):
-                    # Handle: from module import something
-                    if node.module:  # Skip relative imports (from . import ...)
-                        modules.add(node.module.split(".")[0])
-
-            return len(modules)
-        except Exception:
+        if not self.is_valid_syntax:
             return 0
+
+        modules = set()
+
+        for node in ast.walk(self._ast_tree):
+            if isinstance(node, ast.Import):
+                # Handle: import module, import module.submodule
+                for alias in node.names:
+                    modules.add(alias.name.split(".")[0])
+
+            elif isinstance(node, ast.ImportFrom):
+                # Handle: from module import something
+                if node.module:  # Skip relative imports (from . import ...)
+                    modules.add(node.module.split(".")[0])
+
+        return len(modules)
 
     def mccabe(self, total=False, use_median=False):
         """
@@ -246,61 +260,57 @@ class Py:
             If total=False: Mean or median complexity per function (float).
             Returns 0 if parsing fails or no functions found.
         """
-        try:
-            if self._ast_tree is None:
+        if not self.is_valid_syntax:
+            return 0
+
+        def count_complexity_nodes(node):
+            """Count nodes that contribute to cyclomatic complexity."""
+            complexity = 0
+            for child in ast.walk(node):
+                if isinstance(
+                    child,
+                    (
+                        ast.If
+                        | ast.While
+                        | ast.For
+                        | ast.AsyncFor
+                        | ast.Try
+                        | ast.ExceptHandler
+                        | ast.With
+                        | ast.AsyncWith
+                        | ast.BoolOp  # and, or operators
+                    ),
+                ):
+                    complexity += 1
+                elif isinstance(child, ast.comprehension):
+                    # List/dict/set comprehensions with conditions
+                    complexity += len(child.ifs)
+            return complexity
+
+        if total:
+            # Count all complexity in the module + base complexity of 1.
+            return 1 + count_complexity_nodes(self._ast_tree)
+        else:
+            # Per-function statistics
+            function_nodes = [
+                node
+                for node in ast.walk(self._ast_tree)
+                if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef))
+            ]
+
+            if not function_nodes:
                 return 0
 
-            def count_complexity_nodes(node):
-                """Count nodes that contribute to cyclomatic complexity."""
-                complexity = 0
-                for child in ast.walk(node):
-                    if isinstance(
-                        child,
-                        (
-                            ast.If
-                            | ast.While
-                            | ast.For
-                            | ast.AsyncFor
-                            | ast.Try
-                            | ast.ExceptHandler
-                            | ast.With
-                            | ast.AsyncWith
-                            | ast.BoolOp  # and, or operators
-                        ),
-                    ):
-                        complexity += 1
-                    elif isinstance(child, ast.comprehension):
-                        # List/dict/set comprehensions with conditions
-                        complexity += len(child.ifs)
-                return complexity
+            complexities = []
+            for func_node in function_nodes:
+                # Each function starts with complexity 1, plus decision points
+                func_complexity = 1 + count_complexity_nodes(func_node)
+                complexities.append(func_complexity)
 
-            if total:
-                # Count all complexity in the module + base complexity of 1.
-                return 1 + count_complexity_nodes(self._ast_tree)
+            if use_median:
+                return pd.Series(complexities).median()
             else:
-                # Per-function statistics
-                function_nodes = [
-                    node
-                    for node in ast.walk(self._ast_tree)
-                    if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef))
-                ]
-
-                if not function_nodes:
-                    return 0
-
-                complexities = []
-                for func_node in function_nodes:
-                    # Each function starts with complexity 1, plus decision points
-                    func_complexity = 1 + count_complexity_nodes(func_node)
-                    complexities.append(func_complexity)
-
-                if use_median:
-                    return pd.Series(complexities).median()
-                else:
-                    return pd.Series(complexities).mean()
-
-        except Exception:
-            return 0
+                return pd.Series(complexities).mean()
 
     def cognitive_complexity(self, total=False, use_median=False):
         """
@@ -466,116 +476,115 @@ class Py:
         """
         from codelytics import Names  # noqa: PLC0415
 
-        try:
-            tree = ast.parse(self.content)
-            user_names = set()
+        if not self.is_valid_syntax:
+            return Names([])  # Return empty Names object if syntax is invalid
 
-            for node in ast.walk(tree):
-                # Function definitions
-                if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef)):
-                    user_names.add(node.name)
-                    # Function parameters
-                    for arg in node.args.args:
-                        user_names.add(arg.arg)
-                    for arg in node.args.posonlyargs:
-                        user_names.add(arg.arg)
-                    for arg in node.args.kwonlyargs:
-                        user_names.add(arg.arg)
-                    if node.args.vararg:
-                        user_names.add(node.args.vararg.arg)
-                    if node.args.kwarg:
-                        user_names.add(node.args.kwarg.arg)
+        user_names = set()
 
-                # Class definitions
-                elif isinstance(node, ast.ClassDef):
-                    user_names.add(node.name)
+        for node in ast.walk(self._ast_tree):
+            # Function definitions
+            if isinstance(node, (ast.FunctionDef | ast.AsyncFunctionDef)):
+                user_names.add(node.name)
+                # Function parameters
+                for arg in node.args.args:
+                    user_names.add(arg.arg)
+                for arg in node.args.posonlyargs:
+                    user_names.add(arg.arg)
+                for arg in node.args.kwonlyargs:
+                    user_names.add(arg.arg)
+                if node.args.vararg:
+                    user_names.add(node.args.vararg.arg)
+                if node.args.kwarg:
+                    user_names.add(node.args.kwarg.arg)
 
-                # Variable assignments
-                elif isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if isinstance(target, ast.Name):
-                            user_names.add(target.id)
-                        elif isinstance(target, ast.Tuple | ast.List):
-                            for elt in target.elts:
-                                if isinstance(elt, ast.Name):
-                                    user_names.add(elt.id)
-                        elif isinstance(target, ast.Attribute):
-                            # Class attributes (self.attr = value)
-                            user_names.add(target.attr)
+            # Class definitions
+            elif isinstance(node, ast.ClassDef):
+                user_names.add(node.name)
 
-                # Augmented assignments (+=, -=, etc.)
-                elif isinstance(node, ast.AugAssign):
-                    if isinstance(node.target, ast.Name):
-                        user_names.add(node.target.id)
-                    elif isinstance(node.target, ast.Attribute):
-                        user_names.add(node.target.attr)
+            # Variable assignments
+            elif isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        user_names.add(target.id)
+                    elif isinstance(target, ast.Tuple | ast.List):
+                        for elt in target.elts:
+                            if isinstance(elt, ast.Name):
+                                user_names.add(elt.id)
+                    elif isinstance(target, ast.Attribute):
+                        # Class attributes (self.attr = value)
+                        user_names.add(target.attr)
 
-                # Annotated assignments (var: type = value)
-                elif isinstance(node, ast.AnnAssign):
-                    if isinstance(node.target, ast.Name):
-                        user_names.add(node.target.id)
-                    elif isinstance(node.target, ast.Attribute):
-                        user_names.add(node.target.attr)
+            # Augmented assignments (+=, -=, etc.)
+            elif isinstance(node, ast.AugAssign):
+                if isinstance(node.target, ast.Name):
+                    user_names.add(node.target.id)
+                elif isinstance(node.target, ast.Attribute):
+                    user_names.add(node.target.attr)
 
-                # Named expressions (walrus operator :=)
-                elif isinstance(node, ast.NamedExpr):
-                    if isinstance(node.target, ast.Name):
-                        user_names.add(node.target.id)
+            # Annotated assignments (var: type = value)
+            elif isinstance(node, ast.AnnAssign):
+                if isinstance(node.target, ast.Name):
+                    user_names.add(node.target.id)
+                elif isinstance(node.target, ast.Attribute):
+                    user_names.add(node.target.attr)
 
-                # For loop variables
-                elif isinstance(node, ast.For):
-                    if isinstance(node.target, ast.Name):
-                        user_names.add(node.target.id)
-                    elif isinstance(node.target, ast.Tuple | ast.List):
-                        for elt in node.target.elts:
+            # Named expressions (walrus operator :=)
+            elif isinstance(node, ast.NamedExpr):
+                if isinstance(node.target, ast.Name):
+                    user_names.add(node.target.id)
+
+            # For loop variables
+            elif isinstance(node, ast.For):
+                if isinstance(node.target, ast.Name):
+                    user_names.add(node.target.id)
+                elif isinstance(node.target, ast.Tuple | ast.List):
+                    for elt in node.target.elts:
+                        if isinstance(elt, ast.Name):
+                            user_names.add(elt.id)
+
+            # Comprehension variables
+            elif isinstance(
+                node, (ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp)
+            ):
+                for generator in node.generators:
+                    if isinstance(generator.target, ast.Name):
+                        user_names.add(generator.target.id)
+                    elif isinstance(generator.target, ast.Tuple | ast.List):
+                        for elt in generator.target.elts:
                             if isinstance(elt, ast.Name):
                                 user_names.add(elt.id)
 
-                # Comprehension variables
-                elif isinstance(
-                    node, (ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp)
-                ):
-                    for generator in node.generators:
-                        if isinstance(generator.target, ast.Name):
-                            user_names.add(generator.target.id)
-                        elif isinstance(generator.target, ast.Tuple | ast.List):
-                            for elt in generator.target.elts:
-                                if isinstance(elt, ast.Name):
-                                    user_names.add(elt.id)
+            # Exception handling variables
+            elif isinstance(node, ast.ExceptHandler):
+                if node.name:
+                    user_names.add(node.name)
 
-                # Exception handling variables
-                elif isinstance(node, ast.ExceptHandler):
-                    if node.name:
-                        user_names.add(node.name)
+            # With statement variables
+            elif isinstance(node, ast.withitem):
+                if node.optional_vars:
+                    if isinstance(node.optional_vars, ast.Name):
+                        user_names.add(node.optional_vars.id)
+                    elif isinstance(node.optional_vars, ast.Tuple | ast.List):
+                        for elt in node.optional_vars.elts:
+                            if isinstance(elt, ast.Name):
+                                user_names.add(elt.id)
 
-                # With statement variables
-                elif isinstance(node, ast.withitem):
-                    if node.optional_vars:
-                        if isinstance(node.optional_vars, ast.Name):
-                            user_names.add(node.optional_vars.id)
-                        elif isinstance(node.optional_vars, ast.Tuple | ast.List):
-                            for elt in node.optional_vars.elts:
-                                if isinstance(elt, ast.Name):
-                                    user_names.add(elt.id)
+            # Global and nonlocal declarations
+            elif isinstance(node, ast.Global):
+                for name in node.names:
+                    user_names.add(name)
+            elif isinstance(node, ast.Nonlocal):
+                for name in node.names:
+                    user_names.add(name)
 
-                # Global and nonlocal declarations
-                elif isinstance(node, ast.Global):
-                    for name in node.names:
-                        user_names.add(name)
-                elif isinstance(node, ast.Nonlocal):
-                    for name in node.names:
-                        user_names.add(name)
+        return Names(
+            {
+                name
+                for name in user_names - {"self", "cls"}
+                if not name.startswith("__") and not name.endswith("__")
+            }
+        )  # Exclude common names
 
-            return Names(
-                {
-                    name
-                    for name in user_names - {"self", "cls"}
-                    if not name.startswith("__") and not name.endswith("__")
-                }
-            )  # Exclude common names
-
-        except Exception:
-            return Names([])  # Return empty Names object on error
 
     @property
     def comments(self):
@@ -593,20 +602,20 @@ class Py:
         """
         from codelytics import TextAnalysis  # noqa: PLC0415
 
-        try:
-            comments = []
-            tokens = tokenize.generate_tokens(io.StringIO(self.content).readline)
-
-            for token in tokens:
-                if token.type == tokenize.COMMENT:
-                    # Strip the # and any leading/trailing whitespace
-                    if comment_text := token.string.lstrip("#").strip():
-                        comments.append(comment_text)
-
-            return TextAnalysis(comments)
-
-        except Exception:
+        if not self.is_valid_syntax:
             return TextAnalysis([])
+
+        comments = []
+        tokens = tokenize.generate_tokens(io.StringIO(self.content).readline)
+
+        for token in tokens:
+            if token.type == tokenize.COMMENT:
+                # Strip the # and any leading/trailing whitespace
+                if comment_text := token.string.lstrip("#").strip():
+                    comments.append(comment_text)
+
+        return TextAnalysis(comments)
+
 
     @property
     def docstrings(self):
@@ -624,35 +633,34 @@ class Py:
         """
         from codelytics import TextAnalysis  # noqa: PLC0415
 
-        try:
-            docstrings = []
-
-            def extract_docstring(node):
-                """Extract docstring from a node if it exists."""
-                if (
-                    node.body
-                    and isinstance(node.body[0], ast.Expr)
-                    and isinstance(node.body[0].value, ast.Constant)
-                    and isinstance(node.body[0].value.value, str)
-                ):
-                    return node.body[0].value.value.strip()
-                return None
-
-            # Module docstring
-            module_docstring = extract_docstring(self._ast_tree)
-            if module_docstring:
-                docstrings.append(module_docstring)
-
-            # Walk through all nodes to find classes and functions
-            for node in ast.walk(self._ast_tree):
-                if isinstance(
-                    node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
-                ):
-                    docstring = extract_docstring(node)
-                    if docstring:
-                        docstrings.append(docstring)
-
-            return TextAnalysis(docstrings)
-
-        except Exception:
+        if not self.is_valid_syntax:
             return TextAnalysis([])
+
+        docstrings = []
+
+        def extract_docstring(node):
+            """Extract docstring from a node if it exists."""
+            if (
+                node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+                and isinstance(node.body[0].value.value, str)
+            ):
+                return node.body[0].value.value.strip()
+            return None
+
+        # Module docstring
+        module_docstring = extract_docstring(self._ast_tree)
+        if module_docstring:
+            docstrings.append(module_docstring)
+
+        # Walk through all nodes to find classes and functions
+        for node in ast.walk(self._ast_tree):
+            if isinstance(
+                node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
+            ):
+                docstring = extract_docstring(node)
+                if docstring:
+                    docstrings.append(docstring)
+
+        return TextAnalysis(docstrings)

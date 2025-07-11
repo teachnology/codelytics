@@ -156,20 +156,24 @@ class Dir:
         Extract and merge content from all files in the directory.
 
         Extracts content from Python files, Jupyter notebooks, and Markdown files
-        based on the specified content type.
+        based on the specified content type. For code content, filters out files
+        and cells with invalid Python syntax.
 
         Parameters
         ----------
         content_type : str
             Type of content to extract. Options are:
             - 'code': Extract code from .py files and code cells from .ipynb files
+                    (excludes files/cells with syntax errors)
             - 'markdown': Extract from .md files and markdown cells from .ipynb files
 
         Returns
         -------
-        Py or Markdown object
+        Py or TextAnalysis object
             Each file's content is separated by double newlines.
-            Returns empty string if no files found or content type not recognized.
+            For code content, only includes syntactically valid Python code.
+            Returns empty content if no valid files found or content type not
+            recognized.
         """
         if content_type not in ["code", "markdown"]:
             raise ValueError("Invalid content_type. Use 'code' or 'markdown'.")
@@ -178,13 +182,26 @@ class Dir:
 
         for file_path in self:
             try:
+                content = None
+
                 if content_type == "code":
                     if file_path.suffix == ".py":
-                        content = file_path.read_text(encoding="utf-8")
+                        try:
+                            temp_py = Py(file_path)
+                            if temp_py.is_valid_syntax:
+                                content = temp_py.content
+                        except Exception:
+                            # Skip files that can't be processed
+                            continue
 
                     elif file_path.suffix == ".ipynb":
                         nb = Notebook(file_path)
-                        content = nb.extract("code").content
+                        # Notebook.extract("code") already filters out invalid syntax.
+                        extracted_code = nb.extract("code")
+                        if (
+                            extracted_code.content.strip()
+                        ):  # Only add if there's valid content
+                            content = extracted_code.content
 
                 elif content_type == "markdown":
                     if file_path.suffix == ".md":
@@ -194,10 +211,12 @@ class Dir:
                         nb = Notebook(file_path)
                         content = nb.extract("markdown")[0]
 
-                if content.strip():
+                # Only add content if it exists and is not empty
+                if content and content.strip():
                     content_parts.append(content)
 
             except Exception:
+                # Skip files that cause any processing errors
                 continue
 
         source = "\n\n".join(content_parts)

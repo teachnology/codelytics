@@ -1,14 +1,32 @@
 import pathlib
 import subprocess
+import shutil
 
 import pytest
 
 import codelytics as cdl
 
 
+PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
+
+
 @pytest.fixture
 def dir():
-    return cdl.Dir(path=pathlib.Path(__file__).parent / "data" / "project01")
+    return cdl.Dir(path=PROJECT_DIR)
+
+
+@pytest.fixture
+def invalid_dir(tmp_path):
+    """Create a Dir fixture with invalid Python by converting .txt to .py files."""
+    # Copy entire project directory to tmp_path
+    temp_project_dir = tmp_path / "project01"
+    shutil.copytree(PROJECT_DIR, temp_project_dir)
+
+    # Convert all .txt files to .py files in the temp directory
+    for txt_file in temp_project_dir.rglob("*.txt"):
+        txt_file.rename(txt_file.with_suffix(".py"))
+
+    return cdl.Dir(temp_project_dir)
 
 
 @pytest.fixture
@@ -132,9 +150,15 @@ class TestFileCounting:
     def test_files_nonexistent_suffix(self, dir):
         assert dir.n_files("xyz") == 0
 
+    def test_invalid_dir(self, dir, invalid_dir):
+        # Should not raise an error, but return empty content for invalid files
+        assert invalid_dir.n_files("txt") == 0
+        assert dir.n_files("txt") == 1
+        assert invalid_dir.n_files("py") == dir.n_files("py") + 1
+
 
 class TestExtract:
-    def test_extract_code(self, dir):
+    def test_code(self, dir):
         code = dir.extract("code")
         assert isinstance(code, cdl.Py)
         assert len(code.content) > 0
@@ -143,7 +167,7 @@ class TestExtract:
         assert "# Walrus operator" in code.content
         assert "print(sh)" in code.content
 
-    def test_extract_markdown(self, dir):
+    def test_markdown(self, dir):
         md = dir.extract("markdown")
         assert isinstance(md, cdl.TextAnalysis)
         assert len(md.texts) > 0
@@ -151,6 +175,24 @@ class TestExtract:
         assert "This is a readme file." in md.texts[0]
         assert "Let's analyse the data:" in md.texts[0]
 
-    def test_extract_invalid_content_type(self, dir):
+    def test_invalid_content_type(self, dir):
         with pytest.raises(ValueError):
             dir.extract("invalid_type")
+
+
+class TestExtractionInvalid:
+    def test_invalid_py(self, invalid_dir):
+        code = invalid_dir.extract("code")
+        assert isinstance(code, cdl.Py)
+        assert "a + b" not in code.content
+        assert "# colon missing" not in code.content
+        assert "Hello from a valid syntax function!" in code.content
+
+        assert "def function_with_loop_and_conditions(numbers):" in code.content
+        assert "x =+ 5" not in code.content
+        assert "# Incorrect indentation" not in code.content
+
+    def test_invalid_md(self, dir, invalid_dir):
+        md_invalid = invalid_dir.extract("markdown")
+        md_valid = dir.extract("markdown")
+        assert md_invalid.texts == md_valid.texts

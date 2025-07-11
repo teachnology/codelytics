@@ -1,6 +1,6 @@
 [project]
 name = "codelytics"
-version = "2025.06.0"
+version = "2025.07.0"
 description = "A Python package for measuring code parameters."
 readme = "README.md"
 authors = [{ name = "marijanbeg", email = "m.beg@imperial.ac.uk" }]

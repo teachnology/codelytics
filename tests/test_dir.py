@@ -38,6 +38,7 @@ def repo(tmp_path):
 
     commands = [
         ["git", "init"],
+        ["git", "checkout", "-b", "main"],
         ["git", "config", "user.email", "test_fake_user@example.com"],
         ["git", "config", "user.name", "Test User"],
         ["git", "add", "test.txt"],

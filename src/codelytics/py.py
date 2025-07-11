@@ -96,7 +96,11 @@ class Py:
         int
             Total number of logical lines of code, excluding docstrings.
         """
-        return self.radon_analysis.lloc - len(self.docstrings)
+        return (
+            None
+            if self.radon_analysis is None
+            else self.radon_analysis.lloc - len(self.docstrings)
+        )
 
     @property
     def n_char(self):
@@ -116,7 +120,7 @@ class Py:
         try:
             return radon.complexity.cc_visit(self.content)
         except Exception:
-            return []
+            return None
 
     @property
     def n_functions(self):
@@ -133,8 +137,14 @@ class Py:
         int
             Total number of function definitions.
         """
-        return sum(
-            1 for item in self._cc_results if isinstance(item, radon.visitors.Function)
+        return (
+            sum(
+                1
+                for item in self._cc_results
+                if isinstance(item, radon.visitors.Function)
+            )
+            if self._cc_results is not None
+            else None
         )
 
     @property
@@ -150,8 +160,12 @@ class Py:
         int
             Total number of class definitions.
         """
-        return sum(
-            1 for item in self._cc_results if isinstance(item, radon.visitors.Class)
+        return (
+            sum(
+                1 for item in self._cc_results if isinstance(item, radon.visitors.Class)
+            )
+            if self._cc_results is not None
+            else None
         )
 
     @functools.cached_property
@@ -194,7 +208,7 @@ class Py:
             Total number of import statements.
         """
         if not self.is_valid_syntax:
-            return 0
+            return None
 
         return sum(
             1
@@ -222,7 +236,7 @@ class Py:
             Total number of unique modules imported.
         """
         if not self.is_valid_syntax:
-            return 0
+            return None
 
         modules = set()
 
@@ -261,7 +275,7 @@ class Py:
             Returns 0 if parsing fails or no functions found.
         """
         if not self.is_valid_syntax:
-            return 0
+            return None
 
         def count_complexity_nodes(node):
             """Count nodes that contribute to cyclomatic complexity."""
@@ -339,28 +353,27 @@ class Py:
             If total=False: Mean or median complexity per function (float).
             Returns 0 if no functions found or if complexipy is not available.
         """
-        try:
-            result = complexipy.code_complexity(self.content)
+        if not self.is_valid_syntax:
+            return None
 
-            if total:
-                return result.complexity
+        result = complexipy.code_complexity(self.content)
 
-            # Extract individual function complexities
-            if hasattr(result, "functions") and result.functions:
-                complexities = [func.complexity for func in result.functions]
-            else:
-                return 0
+        if total:
+            return result.complexity
 
-            if not complexities:
-                return 0
-
-            if use_median:
-                return pd.Series(complexities).median()
-            else:
-                return pd.Series(complexities).mean()
-
-        except Exception:
+        # Extract individual function complexities
+        if hasattr(result, "functions") and result.functions:
+            complexities = [func.complexity for func in result.functions]
+        else:
             return 0
+
+        if not complexities:
+            return 0
+
+        if use_median:
+            return pd.Series(complexities).median()
+        else:
+            return pd.Series(complexities).mean()
 
     def halstead(self, total=False, use_median=False):
         """
@@ -404,60 +417,59 @@ class Py:
             }
         )
 
-        try:
-            halstead_data = radon.metrics.h_visit(self.content)
+        if not self.is_valid_syntax:
+            return zero_series.replace(0, None)
 
-            if total:
-                # Get total metrics for entire source
-                total_report = halstead_data.total
+        halstead_data = radon.metrics.h_visit(self.content)
+
+        if total:
+            # Get total metrics for entire source
+            total_report = halstead_data.total
+            return pd.Series(
+                {
+                    "vocabulary": float(total_report.vocabulary),
+                    "length": float(total_report.length),
+                    "volume": float(total_report.volume),
+                    "difficulty": float(total_report.difficulty),
+                    "effort": float(total_report.effort),
+                }
+            )
+        else:
+            # Per-function statistics
+            if not halstead_data.functions:
+                return zero_series
+
+            # Get HalsteadReport objects for each function
+            function_reports = [report for _, report in halstead_data.functions]
+
+            # Extract metric arrays
+            vocabularies = [report.vocabulary for report in function_reports]
+            lengths = [report.length for report in function_reports]
+            volumes = [report.volume for report in function_reports]
+            difficulties = [report.difficulty for report in function_reports]
+            efforts = [report.effort for report in function_reports]
+
+            # Calculate mean or median using pandas
+            if use_median:
                 return pd.Series(
                     {
-                        "vocabulary": float(total_report.vocabulary),
-                        "length": float(total_report.length),
-                        "volume": float(total_report.volume),
-                        "difficulty": float(total_report.difficulty),
-                        "effort": float(total_report.effort),
+                        "vocabulary": float(pd.Series(vocabularies).median()),
+                        "length": float(pd.Series(lengths).median()),
+                        "volume": float(pd.Series(volumes).median()),
+                        "difficulty": float(pd.Series(difficulties).median()),
+                        "effort": float(pd.Series(efforts).median()),
                     }
                 )
             else:
-                # Per-function statistics
-                if not halstead_data.functions:
-                    return zero_series
-
-                # Get HalsteadReport objects for each function
-                function_reports = [report for _, report in halstead_data.functions]
-
-                # Extract metric arrays
-                vocabularies = [report.vocabulary for report in function_reports]
-                lengths = [report.length for report in function_reports]
-                volumes = [report.volume for report in function_reports]
-                difficulties = [report.difficulty for report in function_reports]
-                efforts = [report.effort for report in function_reports]
-
-                # Calculate mean or median using pandas
-                if use_median:
-                    return pd.Series(
-                        {
-                            "vocabulary": float(pd.Series(vocabularies).median()),
-                            "length": float(pd.Series(lengths).median()),
-                            "volume": float(pd.Series(volumes).median()),
-                            "difficulty": float(pd.Series(difficulties).median()),
-                            "effort": float(pd.Series(efforts).median()),
-                        }
-                    )
-                else:
-                    return pd.Series(
-                        {
-                            "vocabulary": float(pd.Series(vocabularies).mean()),
-                            "length": float(pd.Series(lengths).mean()),
-                            "volume": float(pd.Series(volumes).mean()),
-                            "difficulty": float(pd.Series(difficulties).mean()),
-                            "effort": float(pd.Series(efforts).mean()),
-                        }
-                    )
-
-        except Exception:
-            return zero_series
+                return pd.Series(
+                    {
+                        "vocabulary": float(pd.Series(vocabularies).mean()),
+                        "length": float(pd.Series(lengths).mean()),
+                        "volume": float(pd.Series(volumes).mean()),
+                        "difficulty": float(pd.Series(difficulties).mean()),
+                        "effort": float(pd.Series(efforts).mean()),
+                    }
+                )
 
     @property
     def user_defined_names(self):
@@ -585,7 +597,6 @@ class Py:
             }
         )  # Exclude common names
 
-
     @property
     def comments(self):
         """
@@ -615,7 +626,6 @@ class Py:
                     comments.append(comment_text)
 
         return TextAnalysis(comments)
-
 
     @property
     def docstrings(self):
@@ -656,9 +666,7 @@ class Py:
 
         # Walk through all nodes to find classes and functions
         for node in ast.walk(self._ast_tree):
-            if isinstance(
-                node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
-            ):
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 docstring = extract_docstring(node)
                 if docstring:
                     docstrings.append(docstring)

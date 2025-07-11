@@ -4,27 +4,25 @@ import pytest
 
 import codelytics as cdl
 
+PROJECT_DIR = pathlib.Path(__file__).parent / "data" / "project01"
+
 
 @pytest.fixture
 def nb():
-    return cdl.Notebook(
-        pathlib.Path(__file__).parent / "data" / "project01" / "valid-notebook.ipynb"
-    )
+    return cdl.Notebook(PROJECT_DIR / "valid-notebook.ipynb")
 
 
 @pytest.fixture
 def invalid_nb():
     return cdl.Notebook(
-        pathlib.Path(__file__).parent / "data" / "project01" / "invalid-notebook.ipynb"
+        PROJECT_DIR / "dir01" / "invalid-syntax" / "invalid-notebook.ipynb"
     )
 
 
 class TestInit:
     def test_invalid(self):
         with pytest.raises(FileNotFoundError):
-            cdl.Notebook(
-                pathlib.Path(__file__).parent / "data" / "project01" / "notebook01.txt"
-            )
+            cdl.Notebook(PROJECT_DIR / "notebook01.txt")
 
 
 class TestNCells:

@@ -46,14 +46,11 @@ def halstead():
 
 @pytest.fixture
 def invalid_syntax():
-    return cdl.Py("""
-def invalid_syntax():
-return "This function has invalid syntax"
-
-def another_invalid_syntax():
-    if True
-        return "This function also has invalid syntax"
-""")
+    return cdl.Py(
+        (PROJECT_DIR / "dir01" / "invalid-syntax" / "invalid-syntax.txt").read_text(
+            encoding="utf-8"
+        )
+    )
 
 
 @pytest.fixture
@@ -302,18 +299,21 @@ class TestHalstead:
 
 class TestEdgeCases:
     def test_syntax_error_handling(self, invalid_syntax):
-        assert invalid_syntax.radon_analysis.loc == 7  # starts with blank line
-        assert invalid_syntax.radon_analysis.lloc == 5
-        assert invalid_syntax.radon_analysis.sloc == 5
-        assert invalid_syntax.radon_analysis.comments == 0
-        assert invalid_syntax.radon_analysis.blank == 2
-        assert invalid_syntax.radon_analysis.multi == 0
-        assert invalid_syntax.n_char > 50
-        assert invalid_syntax.n_functions == 0  # should be 2
-        assert invalid_syntax.n_classes == 0
-        assert invalid_syntax.n_imports == 0
-        assert invalid_syntax.n_imported_modules == 0
-        assert invalid_syntax.mccabe(total=True) == 0  # should be 1 + 1
+        assert "x =+ 5" in invalid_syntax.content
+        assert invalid_syntax.radon_analysis is None
+        assert invalid_syntax.lloc is None
+        assert invalid_syntax.n_char > 100
+        assert invalid_syntax.n_functions is None
+        assert invalid_syntax.n_classes is None
+        assert invalid_syntax.n_imports is None
+        assert invalid_syntax.n_imported_modules is None
+        assert invalid_syntax.mccabe(total=True) is None
+        assert not invalid_syntax.is_valid_syntax
+        assert invalid_syntax.cognitive_complexity(total=True) is None
+        assert invalid_syntax.halstead(total=False).isna().all()
+        assert invalid_syntax.user_defined_names.names == []
+        assert invalid_syntax.comments.texts == []
+        assert invalid_syntax.docstrings.texts == []
 
 
 class TestUserDefinedNames:

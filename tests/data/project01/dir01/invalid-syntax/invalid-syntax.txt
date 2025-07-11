@@ -1,0 +1,25 @@
+# Invalid Python syntax examples
+
+# Missing colon after if statement
+if x == 5
+    print("hello")
+
+# Incorrect indentation
+def my_function():
+print("indented incorrectly")
+
+# Missing closing parenthesis
+result = some_function(arg1, arg2
+
+# Invalid variable name starting with number
+2variable = "invalid"
+
+# Missing quotes
+text = hello world
+
+# Incorrect operator
+x =+ 5
+
+# Invalid function definition
+def 123function():
+    pass

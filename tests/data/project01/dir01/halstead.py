@@ -4,7 +4,7 @@ def add(x, y):
     return x + y
 
 
-def multiply(a, b):
+def multiply(a, b):  # 😍
     # vocabulary 2 + 1
     # length 2 + 1
     result = a * b

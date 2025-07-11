@@ -142,6 +142,26 @@ class Names:
         )
 
     @property
+    def simple(self):
+        """
+        Check if names are simple (one word, all lowercase letters).
+
+        Simple names contain only lowercase letters with no underscores,
+        numbers, or uppercase letters (e.g., 'x', 'total', 'result').
+
+        Returns
+        -------
+        pd.Series
+            Series with name as index and boolean values indicating whether
+            the name is simple.
+        """
+        simple_pattern = re.compile(r"^[a-z]+$")
+        return pd.Series(
+            {name: bool(simple_pattern.match(name)) for name in self.names},
+            name="simple",
+        )
+
+    @property
     def ascii(self):
         """
         Check if names contain only ASCII characters.
@@ -185,6 +205,7 @@ class Names:
                 self.pascal_case,
                 self.private,
                 self.endswith_number,
+                self.simple,
                 self.ascii,
             ],
             axis=1,

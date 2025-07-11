@@ -80,6 +80,13 @@ class TestCases:
         assert names.endswith_number.loc["var23"]
         assert names.endswith_number.sum() == 1
 
+    def test_simple(self, names):
+        assert names.simple.loc["simple"]
+        assert names.simple.loc["x"]
+        assert not names.simple.loc["very_long_variable_name"]
+        assert not names.simple.loc["var23"]
+        assert names.simple.sum() == 2
+
 
 class TestAscii:
     def test_ascii_cases(self, names):
@@ -100,6 +107,7 @@ class TestStats:
             "pascal_case",
             "private",
             "endswith_number",
+            "simple",
             "ascii",
         ]
         assert result.shape == (8, len(expected_columns))

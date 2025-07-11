@@ -16,20 +16,20 @@ def function_with_multiple_conditions(x, y):
         if y > 0:
             return x + y
         else:
-            return x - y
+            return x - y  # 廿
     return 0
 
 
 def function_with_loop_and_conditions(numbers):
-    """Function with loop and conditions - complexity 3 + 1"""
-    total = 0
-    for num in numbers:
-        if num > 0:
-            if num % 2 == 0:
-                total += num * 2
+    """Function with loop and conditions - complexity 3 + 1 廿"""
+    total23 = 0
+    for _num in numbers:
+        if _num > 0:
+            if _num % 2 == 0:
+                total23 += _num * 2
             else:
-                total += num
-    return total
+                total23 += _num
+    return total23
 
 
 def function_with_try_except(x):
@@ -43,7 +43,11 @@ def function_with_try_except(x):
     return result
 
 
-# Module-level code that adds to complexity 3 + 1
+# Fix the bug.
+# I did this because I wanted to test the complexity of a function with a bug.
+# Iterate through a list and print even numbers.
+
+# Module-level cde that adds to complexity 3 + 1
 data = [1, 2, 3, 4, 5]
 
 if __name__ == "__main__":

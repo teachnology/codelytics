@@ -93,4 +93,13 @@ convention = "numpy"
 omit = ["tests/*.py"]
 
 [tool.pytest.ini_options]
-addopts = "-v -n auto --doctest-modules --cov=codelytics --cov-report=html --cov-report=term --ignore=tests/data/project01/dir01/invalid-syntax.py --ignore=tests/data/project01/invalid-syntax/"
+addopts = [
+    "-v",
+    "--numprocesses=auto",
+    "--doctest-modules",
+    "--cov=codelytics",
+    "--cov-report=html",
+    "--cov-report=term",
+    "--ignore=tests/data/project01/dir01/invalid-syntax.py",
+    "--ignore=tests/data/project01/invalid-syntax/",
+]

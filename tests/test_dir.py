@@ -205,3 +205,9 @@ class TestStats:
         assert isinstance(stats, pd.Series)
 
         assert stats.loc["docstrings_non_ascii_total"] == 1
+
+    def test_stats_keys(self, dir):
+        stats = dir.stats()
+        stats_nan = cdl.stats_nan(dir.path.name)
+
+        assert stats_nan.index.equals(stats.index)

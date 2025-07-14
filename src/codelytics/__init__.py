@@ -1,4 +1,5 @@
 from .dir import Dir
+from .helpers import stats_nan
 from .names import Names
 from .notebook import Notebook
 from .pdf import PDF
@@ -12,4 +13,5 @@ __all__ = [
     "Notebook",
     "Py",
     "TextAnalysis",
+    "stats_nan",
 ]

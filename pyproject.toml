@@ -1,7 +1,7 @@
 [project]
 name = "codelytics"
-version = "2025.07.0"
-description = "A Python package for measuring code parameters."
+version = "2025.07.1"
+description = "A Python package for extracting code and text metrics in Python projects."
 readme = "README.md"
 authors = [{ name = "marijanbeg", email = "m.beg@imperial.ac.uk" }]
 requires-python = ">=3.13"
@@ -25,7 +25,10 @@ keywords = [
     "code metrics",
     "Jupyter",
     "Python",
-    "C++",
+    "Python package",
+    "assessment",
+    "coursework",
+    "generative AI",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -53,9 +56,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-exclude = [
-    "tests/data/project01/dir01/invalid-syntax/",
-]
+exclude = ["tests/data/project01/dir01/invalid-syntax/"]
 extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]

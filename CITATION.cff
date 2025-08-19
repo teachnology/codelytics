@@ -1,6 +1,3 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
 title: codelytics
 message: 'If you are using this package, please cite.'
@@ -11,7 +8,7 @@ authors:
     email: m.beg@imperial.ac.uk
     affiliation: Imperial College London
     orcid: 'https://orcid.org/0000-0002-6670-3994'
-repository-code: 'https://github.com/teachnology/codely'
+repository-code: 'https://github.com/teachnology/codelytics'
 license: MIT
 version: 2025.07.2
 date-released: '2025-07-10'
